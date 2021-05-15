@@ -1,0 +1,131 @@
+import random
+from enum import IntEnum
+
+
+# Корпус червей
+class Satiety(IntEnum):
+    Starving = 1
+    Hungry = 2
+    WellFed = 3
+
+
+class Length(IntEnum):
+    Short = 1
+    Middle = 2
+    Long = 3
+
+
+class Width(IntEnum):
+    Skinny = 1
+    Usual = 2
+    Fat = 3
+
+
+class Health(int):
+    pass
+
+
+class Wins(int):
+    pass
+
+
+class Worm:
+    def __init__(self, name: str):
+        self.name: str = name
+        self.satiety: Satiety = random.choice([Satiety.Starving, Satiety.Hungry, Satiety.WellFed])
+        self.length: Length = random.choice([Length.Short, Length.Middle, Length.Long])
+        self.width: Width = random.choice([Width.Skinny, Width.Usual, Width.Fat])
+        self.health: Health(int) = 5
+        self.wins: Wins(int) = 0
+
+    def get_score(self) -> int:
+        return self.satiety * 3 + self.length + self.width * 2
+
+    def describe(self) -> None:
+        score = self.get_score()
+        print(f'Worm {self.name}:')
+        print(f'\tsatiety {self.satiety}')
+        print(f'\tlength {self.length}')
+        print(f'\twidth {self.width}')
+        print(f'\tscore {score}')
+
+
+class Warrior(Worm):
+    def __init__(self, name: str, satiety, length, width, health):
+        super().__init__(name)
+        self.name: str = name
+        self.satiety: satiety = random.choice([satiety.Starving, satiety.Hungry, satiety.WellFed])
+        self.length: length = random.choice([length.Short, length.Middle, length.Long])
+        self.width: width = random.choice([width.Skinny, width.Usual, width.Fat])
+        self.health: health(int) = 5
+        self.wins: Wins(int) = 0
+
+    def get_score(self) -> int:
+        return self.satiety * 3 + self.length + self.width * 2
+
+    def describe(self) -> None:
+        score = self.get_score()
+        print(f'Warrior {self.name}:')
+        print(f'\tsatiety {self.satiety}')
+        print(f'\tlength {self.length}')
+        print(f'\twidth {self.width}')
+        print(f'\tscore {score}')
+
+
+# Начальные условия
+worms = [Worm(f'worm{i}') for i in range(1, 11)]
+worms_list = len(worms)
+print('Number of worms at the beginning:')
+print(worms_list)
+warrior1 = random.choice(worms)
+warrior2 = random.choice(worms)
+
+# Основные операции
+
+while worms_list > 1:
+    warrior1 = random.choice(worms)
+    warrior2 = random.choice(worms)
+
+    if warrior1 != warrior2:
+        warrior1.Health = warrior1.Health - 1
+        warrior2.Health = warrior2.Health - 1
+        if warrior1.get_score() > warrior2.get_score():
+            warrior1.Wins = warrior1.Wins + 1
+            worms.remove(warrior2)
+            worms_list = len(worms)
+            if warrior1.Health <= 0:
+                worms.remove(warrior1)
+                worms_list = len(worms)
+            else:
+                continue
+        elif warrior1.get_score() == warrior2.get_score():
+            worms_list = len(worms)
+            continue
+        else:
+            warrior2.Wins = warrior2.Wins + 1
+            worms.remove(warrior1)
+            worms_list = len(worms)
+            if warrior2.Health <= 0:
+                worms.remove(warrior2)
+                worms_list = len(worms)
+    else:
+        worms_list = len(worms)
+        continue
+
+
+print('Number of worms at the end:')
+print(worms_list)
+
+print('warrior1.Wins:')
+print(warrior1.Wins)
+
+print('warrior2.Wins:')
+print(warrior2.Wins)
+
+if worms_list == 1:
+    print("We've got a winner!")
+    print(worms[0])
+else:
+    print('All is dead!')
+
+exit()
