@@ -109,8 +109,10 @@ while worms_list > 1:
                 worms.remove(warrior2)
                 worms_list = len(worms)
     else:
+        warrior1.health = warrior1.health - 1
+        if warrior1.health <= 0:
+            worms.remove(warrior1)
         worms_list = len(worms)
-        continue
 
 
 print('Number of worms at the end:')
