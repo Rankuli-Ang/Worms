@@ -54,10 +54,10 @@ class Warrior(Worm):
     def __init__(self, name: str, satiety, length, width, health):
         super().__init__(name)
         self.name: str = name
-        self.satiety: satiety = random.choice([satiety.Starving, satiety.Hungry, satiety.WellFed])
-        self.length: length = random.choice([length.Short, length.Middle, length.Long])
-        self.width: width = random.choice([width.Skinny, width.Usual, width.Fat])
-        self.health: health(int) = 5
+        self.satiety: Satiety = random.choice([satiety.Starving, satiety.Hungry, satiety.WellFed])
+        self.length: Length = random.choice([length.Short, length.Middle, length.Long])
+        self.width: Width = random.choice([width.Skinny, width.Usual, width.Fat])
+        self.health: Health(int) = 5
         self.wins: Wins(int) = 0
 
     def get_score(self) -> int:
@@ -87,13 +87,13 @@ while worms_list > 1:
     warrior2 = random.choice(worms)
 
     if warrior1 != warrior2:
-        warrior1.Health = warrior1.Health - 1
-        warrior2.Health = warrior2.Health - 1
+        warrior1.health = warrior1.health - 1
+        warrior2.health = warrior2.health - 1
         if warrior1.get_score() > warrior2.get_score():
-            warrior1.Wins = warrior1.Wins + 1
+            warrior1.wins = warrior1.wins + 1
             worms.remove(warrior2)
             worms_list = len(worms)
-            if warrior1.Health <= 0:
+            if warrior1.health <= 0:
                 worms.remove(warrior1)
                 worms_list = len(worms)
             else:
@@ -102,10 +102,10 @@ while worms_list > 1:
             worms_list = len(worms)
             continue
         else:
-            warrior2.Wins = warrior2.Wins + 1
+            warrior2.wins = warrior2.wins + 1
             worms.remove(warrior1)
             worms_list = len(worms)
-            if warrior2.Health <= 0:
+            if warrior2.health <= 0:
                 worms.remove(warrior2)
                 worms_list = len(worms)
     else:
@@ -117,10 +117,10 @@ print('Number of worms at the end:')
 print(worms_list)
 
 print('warrior1.Wins:')
-print(warrior1.Wins)
+print(warrior1.wins)
 
 print('warrior2.Wins:')
-print(warrior2.Wins)
+print(warrior2.wins)
 
 if worms_list == 1:
     print("We've got a winner!")
