@@ -3,10 +3,8 @@ from enum import IntEnum
 
 
 # Корпус червей
-class Satiety(IntEnum):
-    Starving = 1
-    Hungry = 2
-    WellFed = 3
+class Satiety(int):
+    pass
 
 
 class Length(IntEnum):
@@ -32,14 +30,14 @@ class Wins(int):
 class Worm:
     def __init__(self, name: str):
         self.name: str = name
-        self.satiety: Satiety = random.choice([Satiety.Starving, Satiety.Hungry, Satiety.WellFed])
+        self.satiety: Satiety(int) = random.randint(1, 3)
         self.length: Length = random.choice([Length.Short, Length.Middle, Length.Long])
         self.width: Width = random.choice([Width.Skinny, Width.Usual, Width.Fat])
         self.health: Health(int) = 5
         self.wins: Wins(int) = 0
 
     def get_score(self) -> int:
-        return self.satiety * 3 + self.length + self.width * 2
+        return self.satiety * 2 + self.length + self.width * 2
 
     def describe(self) -> None:
         score = self.get_score()
@@ -54,14 +52,14 @@ class Warrior(Worm):
     def __init__(self, name: str, satiety, length, width, health):
         super().__init__(name)
         self.name: str = name
-        self.satiety: Satiety = random.choice([satiety.Starving, satiety.Hungry, satiety.WellFed])
+        self.satiety: Satiety(int) = random.randint(1, 3)
         self.length: Length = random.choice([length.Short, length.Middle, length.Long])
         self.width: Width = random.choice([width.Skinny, width.Usual, width.Fat])
         self.health: Health(int) = 5
         self.wins: Wins(int) = 0
 
     def get_score(self) -> int:
-        return self.satiety * 3 + self.length + self.width * 2
+        return self.satiety * 2 + self.length + self.width * 2
 
     def describe(self) -> None:
         score = self.get_score()
@@ -91,6 +89,7 @@ while worms_list > 1:
         warrior2.health = warrior2.health - 1
         if warrior1.get_score() > warrior2.get_score():
             warrior1.wins = warrior1.wins + 1
+            warrior1.satiety = warrior1.satiety + 1
             worms.remove(warrior2)
             worms_list = len(worms)
             if warrior1.health <= 0:
@@ -103,6 +102,7 @@ while worms_list > 1:
             continue
         else:
             warrior2.wins = warrior2.wins + 1
+            warrior2.satiety = warrior2.satiety + 1
             worms.remove(warrior1)
             worms_list = len(worms)
             if warrior2.health <= 0:
@@ -121,8 +121,14 @@ print(worms_list)
 print('warrior1.Wins:')
 print(warrior1.wins)
 
+print('warrior1.Satiety:')
+print(warrior1.satiety)
+
 print('warrior2.Wins:')
 print(warrior2.wins)
+
+print('warrior2.Satiety:')
+print(warrior2.satiety)
 
 if worms_list == 1:
     print("We've got a winner!")
