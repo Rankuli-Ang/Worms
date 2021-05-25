@@ -26,22 +26,22 @@ class Worm:
         self.experience: Experience = 0
         self.level: Level = 1
 
+    def describe(self) -> None:
+        print(f'Worm {self.name}:')
+        print(f'\thealth {self.health}')
+        print(f'\tdamage {self.damage}')
+        print(f'\tdefense {self.defense}')
+        print(f'\tinitiative {self.initiative}')
+        print(f'\tlevel {self.level}')
+        print(f'\texperience {self.experience}')
+
 
 class Hydralisk(Worm):
     def __init__(self, name: str):
         super().__init__(name)
 
 
-
 # Методы
-def describe(self) -> None:
-    print(f'Worm {self.name}:')
-    print(f'\thealth {self.health}')
-    print(f'\tdamage {self.damage}')
-    print(f'\tdefense {self.defense}')
-    print(f'\tinitiative {self.initiative}')
-    print(f'\tlevel {self.level}')
-    print(f'\texperience {self.experience}')
 
 
 def strike(self, other):
@@ -117,7 +117,7 @@ warrior1 = random.choice(worms)
 warrior2 = random.choice(worms)
 
 while len(worms) > 1:
-    try:  # Если убрать try/except программа иногда крашится, не совсем понимаю в чём проблема
+    try:
         warrior1 = random.choice(worms)
         warrior2 = random.choice(worms)
     except IndexError:
@@ -136,9 +136,3 @@ else:
     print('All is dead!')
 
 print(len(worms))
-
-
-
-
-
-
