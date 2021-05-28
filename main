@@ -1,24 +1,36 @@
 import random
 
 # Переменные (я так понимаю что выносить их таким образом не совсем корректно)
+Name = 0
 Health = 0
 Damage = 0
 Defense = 0
 Initiative = 0
 Experience = 0
 Level = 0
-
+Corpses = 0
+Remains = 0
+Rounds = 0
 number_of_battles = 0
 level_up_variations = ['damage', 'defense', 'initiative']
 level_up_value = 0
+Scourge = 0
+
+# Формирование списка имён червей
+Worms_names_list = []
+Raw_worms_names_file = open('Names.txt')
+lines = list(Raw_worms_names_file)
+for line in lines:
+    Nms = line[:-1]
+    Worms_names_list.append(Nms)
 
 
 # Корпус червей
 
 
 class Worm:
-    def __init__(self, name: str):
-        self.name: str = name
+    def __init__(self):
+        self.name: Name = random.choice(Worms_names_list)
         self.health: Health = random.randint(6, 12)
         self.damage: Damage = random.randint(1, 3)
         self.defense: Defense = random.uniform(0.5, 1.0)
@@ -35,13 +47,67 @@ class Worm:
         print(f'\tlevel {self.level}')
         print(f'\texperience {self.experience}')
 
+    def level_up(self):
+        if self.experience >= self.level + 3:
+            self.level += 1
+            self.experience = 0
+            level_up_value = random.choice(level_up_variations)
+            if level_up_value == level_up_variations[0]:
+                self.level_up_damage()
+            elif level_up_value == level_up_variations[1]:
+                self.level_up_defense()
+            else:
+                self.level_up_initiative()
+
+    def level_up_damage(self):
+        self.damage = self.level + 2
+        self.health = self.level + 5
+
+    def level_up_defense(self):
+        self.defense -= self.level / 200 + 0.05
+        if self.defense < 0.2:
+            self.defense = 0.2
+        self.health = self.level + 5
+
+    def level_up_initiative(self):
+        self.initiative = self.level + 1
+        self.health = self.level + 5
+
+    def death(self):
+        if self.health <= 0:
+            global Corpses
+            Corpses += 1
+
+            return worms.remove(self)
+
 
 class Hydralisk(Worm):
-    def __init__(self, name: str):
-        super().__init__(name)
+    def __init__(self):
+        self.health: Health = random.randint(1, 2)
+        self.damage: Damage = random.randint(1, 2)
+        self.defense: Defense = random.uniform(0.6, 1.0)
+        self.initiative: Initiative = random.randint(3, 5)
+        self.experience: Experience = - 3
+
+    def regeneration(self):
+        self.health += 2
+        return self.health
 
 
-# Методы
+def corpsegrinding():
+    global Remains
+    global Rounds
+    Remains = Corpses / len(worms)
+
+    def feeding():
+        nonlocal eater
+        eater.health = eater.health + Remains
+        return eater.health
+
+    for eater in worms:
+        feeding()
+    Remains = 0
+    Rounds = 0
 
 
 def strike(self, other):
@@ -49,90 +115,76 @@ def strike(self, other):
     return other.health
 
 
-def death(self):
-    if self.health <= 0:
-        return worms.remove(self)
-
-
-def level_up_damage(self):
-    self.damage += 2
-    self.health += 5
-
-
-def level_up_defense(self):
-    self.defense -= 0.05
-    self.health += 5
-
-
-def level_up_initiative(self):
-    self.initiative += 1
-    self.health += 5
-
-
-def level_up(self):
-    if self.experience >= 3:
-        self.level += 1
-        self.experience = 0
-        level_up_value = random.choice(level_up_variations)
-        if level_up_value == level_up_variations[0]:
-            level_up_damage(self)
-        elif level_up_value == level_up_variations[1]:
-            level_up_defense(self)
-        else:
-            level_up_initiative(self)
-
-
 def battle_round(self, other):
     global number_of_battles
     number_of_battles = number_of_battles + 1
+    global Rounds
+    Rounds += 1
+    if Rounds >= 10:
+        if Corpses >= 1:
+            corpsegrinding()
     if self.initiative >= other.initiative:
 
         strike(self, other)
         self.experience += 1
-        level_up(self)
-        death(other)
+        self.level_up()
+        other.death()
 
         strike(other, self)
         other.experience += 1
-        level_up(other)
-        death(self)
+        other.level_up()
+        self.death()
 
     else:
 
         strike(other, self)
         other.experience += 1
-        level_up(other)
-        death(self)
+        other.level_up()
+        self.death()
 
         strike(self, other)
         self.experience += 1
-        level_up(self)
-        death(other)
+        self.level_up()
+        other.death()
 
 
 # Тело программы
-worms = [Worm(f'worm{i}') for i in range(1, 21)]
+if __name__ == "__main__":
+    worms = [Worm() for i in range(1, 51)]
 
-warrior1 = random.choice(worms)
-warrior2 = random.choice(worms)
+    warrior1 = random.choice(worms)
+    warrior2 = random.choice(worms)
 
-while len(worms) > 1:
-    try:
-        warrior1 = random.choice(worms)
-        warrior2 = random.choice(worms)
-    except IndexError:
-        break
-    if warrior1 != warrior2:
-        battle_round(warrior1, warrior2)
+    while len(worms) > 1:
+        try:
+            warrior1 = random.choice(worms)
+            warrior2 = random.choice(worms)
+        except IndexError:
+            break
+        if warrior1 != warrior2:
+            battle_round(warrior1, warrior2)
+        else:
+            continue
+
+    print('Number of battles:')
+    print(number_of_battles)
+
+    Number_of_Battles_file = open('Number_of_Battles.txt').read()
+    Number_of_Battles_raw = int(Number_of_Battles_file) + number_of_battles
+
+    print('Total Number of battles:')
+    print(Number_of_Battles_raw)
+
+    Number_of_Battles_file = open('Number_of_Battles.txt', 'w')
+    Number_of_Battles_file.write(str(Number_of_Battles_raw))
+    Number_of_Battles_file.close()
+
+    if len(worms) == 1:
+        print(worms[0].describe())
+        worms.append(Hydralisk)
+        worms[1].describe()
     else:
-        continue
+        print('All is dead!')
 
-print('Number of battles:')
-print(number_of_battles)
 
-if len(worms) == 1:
-    print(describe(worms[0]))
-else:
-    print('All is dead!')
 
-print(len(worms))
