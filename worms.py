@@ -1,12 +1,25 @@
 import random
 
-
-level_up_variations = ['damage', 'defense', 'initiative']
+# Worms naming
 names_txt = 'Names.txt'
 number_of_battles_txt = 'Number_of_Battles.txt'
+worms_names_list = []
 
 
-# Корпус червей
+def worms_naming():
+    global worms_names_list
+    with open(names_txt) as raw_worms_names_file:
+        lines = list(raw_worms_names_file)
+        for line in lines:
+            line.rstrip('\n')
+            worms_names_list.append(line)
+    return worms_names_list
+
+
+worms_naming()
+
+
+# Worms constructor
 
 class Worm:
     def __init__(self):
@@ -18,6 +31,7 @@ class Worm:
         self.experience: int = 0
         self.level: int = 1
         self.poisoned: int = 0
+        self.already_dead: int = 0
 
     def describe(self):
         print(f'Worm {self.name}:')
@@ -33,13 +47,7 @@ class Worm:
         if self.experience >= self.level + 3:
             self.level += 1
             self.experience = 0
-            level_up_value = random.choice(level_up_variations)
-            if level_up_value == level_up_variations[0]:
-                self.level_up_damage()
-            elif level_up_value == level_up_variations[1]:
-                self.level_up_defense()
-            else:
-                self.level_up_initiative()
+            level_ups.get('damage' or 'defense' or 'initiative')
 
     def level_up_damage(self):
         self.damage += self.level + 2
@@ -55,54 +63,38 @@ class Worm:
         self.initiative += 1
         self.health += self.level // 3 + 3
 
-    def death(self):
-        if self.health <= 0:
-            corpsegrinding()
-            return worms.remove(self)
+    def is_alive(self):
+        if self.health > 0:
+            return True
+        else:
+            return False
+
+    def poison_effect(self):
+        if self.poisoned > 0:
+            self.health -= 1
+            self.poisoned -= 1
 
     def strike(self, other):
         other.health -= self.damage * other.defense
         return other.health
 
-    def attack(self, other):
-        Counter.count()
-        if self.initiative >= other.initiative:
-
-            self.strike(other)
-            self.experience += 1
-            self.level_up()
-            other.death()
-
-            other.strike(self)
-            other.experience += 1
-            other.level_up()
-            self.death()
-
-        else:
-
-            other.strike(self)
-            other.experience += 1
-            other.level_up()
-            self.death()
-
-            self.strike(other)
-            self.experience += 1
-            self.level_up()
-            other.death()
+    def death(self):
+        self.already_dead += 1
+        return self.already_dead
 
 
 class Defiler(Worm):
     def __init__(self):
         super(Defiler, self).__init__()
+        self.already_dead: int = 0
 
     def death(self):
-        if self.health <= 0:
-            corpsegrinding()
-            amount = 0
-            while amount < 3:
-                worms.append(Zerling())
-                amount += 1
-            return worms.remove(self)
+        self.already_dead += 1
+        amount = 0
+        while amount < 3:
+            worms_list.append(Zerling())
+            amount += 1
+        return self.already_dead
 
 
 class Zerling(Worm):
@@ -115,6 +107,7 @@ class Zerling(Worm):
         self.experience: int = 2
         self.level: int = 1
         self.poisoned: int = 0
+        self.already_dead: int = 0
 
 
 class Infectoid(Worm):
@@ -127,9 +120,18 @@ class Infectoid(Worm):
         return other.health
 
 
+# Other globals
+
 def corpsegrinding():
-    remains = 5 / len(worms)
-    for eater in worms:
+    all_remains = 0
+    remains = 0
+    for dead in worms_list:
+        if dead.already_dead != 0:
+            worms_list.remove(dead)
+            all_remains += 3
+    if len(worms_list) > 0:
+        remains = all_remains / len(worms_list)
+    for eater in worms_list:
         eater.health += remains
 
 
@@ -141,58 +143,6 @@ class Statistics:
         self.number_of_battles += 1
 
 
-def worms_naming():
-    global worms_names_list
-    with open(names_txt) as raw_worms_names_file:
-        lines = list(raw_worms_names_file)
-        for line in lines:
-            line.rstrip('\n')
-            worms_names_list.append(line)
-    return worms_names_list
+level_ups = {'damage': Worm.level_up_damage, 'defense': Worm.level_up_defense, 'initiative': Worm.level_up_initiative}
 
-
-# Тело программы
-if __name__ == "__main__":
-
-    # Формирование списка имён червей
-    worms_names_list = []
-    worms_naming()
-
-    defilers_list = [Defiler() for i in range(1, 11)]
-    zerlings_list = [Zerling() for i in range(1, 21)]
-    infectoids_list = [Infectoid() for i in range(1, 6)]
-    worms = defilers_list + zerlings_list + infectoids_list
-
-    Counter = Statistics()
-
-    while len(worms) > 1:
-        worms.sort(key=lambda worm: worm.initiative)
-        for unit in worms:
-            if unit.poisoned > 0:
-                unit.health -= 1
-                unit.poisoned -= 1
-                unit.death()
-                continue
-            enemy = random.choice(worms)
-            if unit == enemy:
-                pass
-            else:
-                unit.attack(enemy)
-
-    print('Number of battles:', Counter.number_of_battles)
-
-    with open(number_of_battles_txt) as nobf:
-        number_of_battles_file = nobf.read()
-        number_of_battles_total = int(number_of_battles_file) + Counter.number_of_battles
-        nobf.close()
-
-    print('Total Number of battles:', number_of_battles_total)
-
-    with open(number_of_battles_txt, 'w') as nobf:
-        nobf.write(str(number_of_battles_total))
-
-    if len(worms) == 1:
-        print(worms[0].describe())
-        print(type(worms[0]))
-    else:
-        print('All is dead!')
+worms_list = []
