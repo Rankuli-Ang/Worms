@@ -1,9 +1,23 @@
 import random
 
 import cv2
-import worms as wm
 
-wm.worms_naming()
+names_txt = 'Names.txt'
+worms_names_list = []
+
+
+def worms_naming():
+    global worms_names_list
+    with open(names_txt) as raw_worms_names_file:
+        lines = list(raw_worms_names_file)
+        for line in lines:
+            line.rstrip('\n')
+            worms_names_list.append(line)
+    return worms_names_list
+
+
+worms_naming()
+
 list_of_worms = []
 list_of_food = []
 world_image = cv2.imread('tabula_rasa.png')
@@ -76,7 +90,7 @@ class food(filler):
 class worm(filler):
     def __init__(self, coordinate_x, coordinate_y):
         super().__init__(coordinate_x, coordinate_y)
-        self.name: str = random.choice(wm.worms_names_list)
+        self.name: str = random.choice(worms_names_list)
         self.coordinate_x: int = coordinate_x
         self.coordinate_y: int = coordinate_y
         self.health: int = random.randint(6, 9)
