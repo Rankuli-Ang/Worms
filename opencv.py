@@ -1,6 +1,7 @@
 import random
 
 import cv2
+import numpy as np
 
 names_txt = 'Names.txt'
 worms_names_list = []
@@ -18,12 +19,16 @@ def worms_naming():
 
 worms_naming()
 
+#rev: не исполнять код при импорте модуля
+#rev: list_of слишком большой и бесполезный префикс
 list_of_worms = []
 list_of_food = []
-world_image = cv2.imread('tabula_rasa.png')
-world_height, world_width, world_channels = world_image.shape
+world_height, world_width, channels = 256, 256, 3
+world_image = np.zeros((world_height, world_width, channels), dtype='uint8')
+# world_image = cv2.imread('tabula_rasa.png')
 world_coordinates = [[0] * 256 for i in range(256)]
 world_name = 'World'
+#rev: цвета - это цвета, а не изображения
 image_worms = [0, 0, 0]
 image_space = [255, 255, 255]
 image_food = [0, 0, 255]
@@ -31,9 +36,10 @@ image_food = [0, 0, 255]
 
 # точки изображения - y,x; точки координат - x,y
 
-
+#rev: в простых формах глаголы ing -> _, creating -> create
 def creating_worm(x, y):
     global list_of_worms
+    #rev: плохо на добавление червя менять сразу 3 разных переменных
     world_image[y, x] = image_worms
     list_of_worms.append(worm(x, y))
     world_coordinates[x][y] = 1
@@ -41,9 +47,8 @@ def creating_worm(x, y):
 
 def detecting_worm(x, y):
     for unit in list_of_worms:
-        if unit.coordinate_x == x:
-            if unit.coordinate_y == y:
-                return unit
+        if unit.coordinate_x == x and unit.coordinate_y == y:
+            return unit
 
 
 def creating_food(x, y):
@@ -100,7 +105,6 @@ class worm(filler):
         self.level: int = 1
         self.experience: int = 0
         self.poisoned: int = 0
-        self.already_dead: int = 0
 
     def describe(self):
         print(f'Worm {self.name}:')
@@ -113,35 +117,28 @@ class worm(filler):
         print(f'\tpoisoned {self.poisoned}')
 
     def level_up(self):
-        if self.already_dead == 0:
-            if self.experience >= self.level + 2:
-                self.level += 1
-                self.experience = 0
-                level_ups = [self.level_up_damage(), self.level_up_initiative(), self.level_up_defense()]
-                level_ups_without_def = [self.level_up_damage(), self.level_up_initiative()]
-                print('BEFORE:', 'damage', self.damage, 'defense', self.defense, 'initiative', self.initiative)
-                if self.defense <= 0.2:
-                    self.defense = 0.2
-                    level_ups_value = random.choice(level_ups_without_def)
-                    print('value', level_ups_value)
-                    if level_ups_value == level_ups_without_def[0]:
-                        self.level_up_damage()
-                        print('damage', self.damage, 'defense', self.defense, 'initiative', self.initiative)
-                    else:
-                        self.level_up_initiative()
-                        print('damage', self.damage, 'defense', self.defense, 'initiative', self.initiative)
-                else:
-                    level_ups_value = random.choice(level_ups)
-                    print('value', level_ups_value)
-                    if level_ups_value == level_ups[0]:
-                        self.level_up_damage()
-                        print('damage', self.damage, 'defense', self.defense, 'initiative', self.initiative)
-                    elif level_ups_value == level_ups[1]:
-                        self.level_up_initiative()
-                        print('damage', self.damage, 'defense', self.defense, 'initiative', self.initiative)
-                    else:
-                        self.level_up_defense()
-                        print('damage', self.damage, 'defense', self.defense, 'initiative', self.initiative)
+        #rev: early return
+        if self.dead:
+            return
+        if self.experience < self.level + 2:
+            return
+
+        self.level += 1
+        self.experience = 0
+
+        level_ups = [self.level_up_damage, self.level_up_initiative]
+        if self.defense >= 0.2:
+            level_ups.append(self.level_up_defense)
+
+        print('BEFORE:', 'damage', self.damage, 'defense', self.defense, 'initiative', self.initiative)
+
+        level_up_func = random.choice(level_ups)
+        level_up_func()
+
+        if self.defense <= 0.2:
+            self.defense = 0.2
+
+        print('AFTER:', 'damage', self.damage, 'defense', self.defense, 'initiative', self.initiative)
 
     def level_up_damage(self):
         self.damage += 2
@@ -158,15 +155,13 @@ class worm(filler):
         self.health += self.level // 3 + 3
         return self.initiative
 
-    def is_dead(self):
-        if self.health <= 0:
-            self.already_dead += 1
-            return self.already_dead
+    @property
+    def dead(self) -> bool:
+        return self.health <= 0
 
     def strike(self, other):
-        if self.already_dead == 0:
+        if not self.dead:
             other.health -= self.damage * other.defense
-            other.is_dead()
             self.experience += 1
 
     '''
@@ -174,6 +169,14 @@ class worm(filler):
         if self.poisoned > 0:
             self.health -= 1
             self.poisoned -= 1'''
+
+    def move(self, dx: int, dy: int, border_x: int, border_y: int) -> None:
+        assert abs(dx) + abs(dy) == 1
+        self.coordinate_x += dx
+        self.coordinate_y += dy
+
+        self.coordinate_y = min(max(self.coordinate_y, 0), border_y - 1)
+        self.coordinate_x = min(max(self.coordinate_x, 0), border_x - 1)
 
     def moving_up(self):
         if self.coordinate_y > 1:
@@ -277,7 +280,7 @@ def corpsegrinding():
     alive_worms = []
     if len(list_of_worms) > 0:
         for alive in list_of_worms:
-            if alive.already_dead == 0:
+            if not alive.dead:
                 alive_worms.append(alive)
             else:
                 world_image[alive.coordinate_y, alive.coordinate_x] = image_space
@@ -311,33 +314,33 @@ while m < 6:
     creating_food(m * 2, m)
     m += 1
 
-cv2.imshow(world_name, world_image)
-cv2.waitKey(0)
-
-visualize_counter = 0
-while len(list_of_worms) > 1:
-    list_of_worms.sort(key=lambda worm: worm.initiative)
-    visualize_counter += 1
-    for unit in list_of_worms:
-        moving_list = [1, 2, 3, 4]
-        x = random.choice(moving_list)
-        if x == 1:
-            unit.moving_up()
-        elif x == 2:
-            unit.moving_down()
-        elif x == 3:
-            unit.moving_left()
-        else:
-            unit.moving_right()
-        if visualize_counter == 25:
-            cv2.imshow(world_name, world_image)
-            cv2.waitKey(0)
-            visualize_counter = 0
-    corpsegrinding()
-
-if len(list_of_worms) == 1:
-    print(list_of_worms[0].describe())
-else:
-    print('All is Dead!')
-
-print('end')
+# cv2.imshow(world_name, world_image)
+# cv2.waitKey(1)
+#
+# visualize_counter = 0
+# while len(list_of_worms) > 1:
+#     list_of_worms.sort(key=lambda worm: worm.initiative)
+#     visualize_counter += 1
+#     for unit in list_of_worms:
+#         moving_list = [1, 2, 3, 4]
+#         x = random.choice(moving_list)
+#         if x == 1:
+#             unit.moving_up()
+#         elif x == 2:
+#             unit.moving_down()
+#         elif x == 3:
+#             unit.moving_left()
+#         else:
+#             unit.moving_right()
+#         if visualize_counter == 25:
+#             cv2.imshow(world_name, world_image)
+#             cv2.waitKey(0)
+#             visualize_counter = 0
+#     corpsegrinding()
+#
+# if len(list_of_worms) == 1:
+#     print(list_of_worms[0].describe())
+# else:
+#     print('All is Dead!')
+#
+# print('end')
