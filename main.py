@@ -83,6 +83,17 @@ class Visualizer(WorldProcessor):
         cv2.waitKey(1)
 
 
+class AddFoodProcessor(WorldProcessor):
+    def __init__(self):
+        super(AddFoodProcessor, self).__init__()
+
+    def process(self, world: World) -> None:
+        growth = random.randint(5, 10)
+        for i in range(growth):
+            food_unit = Food(random.randint(0, world.width), random.randint(0, world.height))
+            world.food.append(food_unit)
+
+
 class MovementProcessor(WorldProcessor):
     def __init__(self):
         super(MovementProcessor, self).__init__()
@@ -92,6 +103,17 @@ class MovementProcessor(WorldProcessor):
             movements = [(1, 0), (-1, 0), (0, 1), (0, -1)]
             dcoord = random.choice(movements)
             worm.move(dcoord[0], dcoord[1], world.width, world.height)
+
+
+class PoisonProcessor(WorldProcessor):
+    def __init__(self):
+        super(PoisonProcessor, self).__init__()
+
+    def process(self, world: World) -> None:
+        for worm in world.worms_by_initiative:
+            if worm.poisoned > 0:
+                worm.health -= 1
+                worm.poisoned -= 1
 
 
 class FightProcessor(WorldProcessor):
@@ -117,6 +139,7 @@ class LevelUpProcessor(WorldProcessor):
     def process(self, world: World) -> None:
         for worm in world.worms:
             worm.level_up()
+
 
 
 class FoodPickUpProcessor(WorldProcessor):
@@ -170,8 +193,9 @@ if __name__ == "__main__":
     populate_world(world, 1000)
     sow_food(world, 1000)
 
-    processors = [MovementProcessor(), FightProcessor(), CorpseGrindingProcessor(), FoodPickUpProcessor(),
-                  DeadWormsRemover(), EatenFoodRemover(), LevelUpProcessor(), Visualizer()]
+    processors = [MovementProcessor(), PoisonProcessor(), FightProcessor(), CorpseGrindingProcessor(),
+                  FoodPickUpProcessor(), DeadWormsRemover(), EatenFoodRemover(), LevelUpProcessor(),
+                  AddFoodProcessor(), Visualizer()]
 
     while True:
         for proc in processors:
