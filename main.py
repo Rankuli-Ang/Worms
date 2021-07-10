@@ -128,6 +128,9 @@ class FightProcessor(WorldProcessor):
             if target is worm:
                 continue
 
+            if worm.relative_check(target) is True:
+                continue
+
             worm.strike(target)
             target.strike(worm)
 
@@ -139,7 +142,6 @@ class LevelUpProcessor(WorldProcessor):
     def process(self, world: World) -> None:
         for worm in world.worms:
             worm.level_up()
-
 
 
 class FoodPickUpProcessor(WorldProcessor):
@@ -188,6 +190,19 @@ class DeadWormsRemover(WorldProcessor):
         world.worms = alive_worms
 
 
+class WormDivision(WorldProcessor):
+    def __init__(self):
+        super(WormDivision, self).__init__()
+
+    def process(self, world: World) -> None:
+        for parent in world.worms:
+            if parent.divisions_limit > 0:
+                child = Worm(parent.coordinate_x, parent.coordinate_y)
+                child.genotype = parent.genotype + 0.00000000000001
+                world.worms.append(child)
+                parent.divisions_limit -= 1
+
+
 if __name__ == "__main__":
     world = World()
     populate_world(world, 1000)
@@ -195,8 +210,9 @@ if __name__ == "__main__":
 
     processors = [MovementProcessor(), PoisonProcessor(), FightProcessor(), CorpseGrindingProcessor(),
                   FoodPickUpProcessor(), DeadWormsRemover(), EatenFoodRemover(), LevelUpProcessor(),
-                  AddFoodProcessor(), Visualizer()]
+                  AddFoodProcessor(), WormDivision(), Visualizer()]
 
     while True:
         for proc in processors:
             proc.process(world)
+
