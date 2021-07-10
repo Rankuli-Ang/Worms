@@ -43,6 +43,8 @@ class Worm(Role):
         self.level: int = 1
         self.experience: int = 0
         self.poisoned: int = 0
+        self.genotype: float = random.random()
+        self.divisions_limit: int = 0
 
     def describe(self):
         print(f'Worm {self.name}:')
@@ -53,6 +55,8 @@ class Worm(Role):
         print(f'\tlevel {self.level}')
         print(f'\texperience {self.experience}')
         print(f'\tpoisoned {self.poisoned}')
+        print(f'\tgenotype {self.genotype}')
+        print(f'\tdivisions_number {self.divisions_limit}')
 
     def level_up(self):
         if self.dead:
@@ -73,6 +77,8 @@ class Worm(Role):
         if self.defense <= 0.2:
             self.defense = 0.2
 
+        self.division_potential()
+
     def level_up_damage(self):
         self.damage += 2
         self.health += self.level // 3 + 3
@@ -88,12 +94,22 @@ class Worm(Role):
         self.health += self.level // 3 + 3
         return self.initiative
 
+    def division_potential(self):
+        if self.level > 2:
+            self.divisions_limit += 1
+
     @property
     def dead(self) -> bool:
         return self.health <= 0
 
     def poison(self, target):
         target.poisoned += random.randint(1, 3)
+
+    def relative_check(self, other) -> bool:
+        if abs(self.genotype - other.genotype) > 0.000000000001:
+            return False
+        else:
+            return True
 
     def strike(self, other):
         if not self.dead:
