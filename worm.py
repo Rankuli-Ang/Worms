@@ -21,7 +21,13 @@ class Role:
 class Food(Role):
     def __init__(self, coordinate_x, coordinate_y):
         super().__init__(coordinate_x, coordinate_y)
+        self.coordinate_x: int = coordinate_x
+        self.coordinate_y: int = coordinate_y
         self.nutritional_value: int = random.randint(1, 5)
+
+    @property
+    def eaten(self) -> bool:
+        return self.nutritional_value <= 0
 
 
 class Worm(Role):
@@ -90,6 +96,11 @@ class Worm(Role):
         if not self.dead:
             other.health -= self.damage * other.defense
             self.experience += 1
+
+    def eat(self, target_food):
+        if target_food.nutritional_value > 0:
+            self.health += target_food.nutritional_value
+            target_food.nutritional_value = 0
 
     '''
     def poison_effect(self):
