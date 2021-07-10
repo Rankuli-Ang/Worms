@@ -92,21 +92,21 @@ class Worm(Role):
     def dead(self) -> bool:
         return self.health <= 0
 
+    def poison(self, target):
+        target.poisoned += random.randint(1, 3)
+
     def strike(self, other):
         if not self.dead:
             other.health -= self.damage * other.defense
             self.experience += 1
+            saving_throw = random.randint(1, 10)
+            if saving_throw <= 3:
+                self.poison(other)
 
     def eat(self, target_food):
         if target_food.nutritional_value > 0:
             self.health += target_food.nutritional_value
             target_food.nutritional_value = 0
-
-    '''
-    def poison_effect(self):
-        if self.poisoned > 0:
-            self.health -= 1
-            self.poisoned -= 1'''
 
     def move(self, dx: int, dy: int, border_x: int, border_y: int) -> None:
         assert abs(dx) + abs(dy) == 1
