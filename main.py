@@ -41,13 +41,13 @@ class World:
 
 def populate_world(world: World, worms_num: int = 100) -> None:
     for i in range(worms_num):
-        worm = Worm(random.randint(0, world.width), random.randint(0, world.height))
+        worm = Worm(random.randrange(0, world.width), random.randrange(0, world.height))
         world.worms.append(worm)
 
 
 def sow_food(world: World, food_num: int = 10) -> None:
     for i in range(food_num):
-        food_unit = Food(random.randint(0, world.width), random.randint(0, world.height))
+        food_unit = Food(random.randrange(0, world.width), random.randrange(0, world.height))
         world.food.append(food_unit)
 
 
@@ -90,7 +90,7 @@ class AddFoodProcessor(WorldProcessor):
     def process(self, world: World) -> None:
         growth = random.randint(5, 10)
         for i in range(growth):
-            food_unit = Food(random.randint(0, world.width), random.randint(0, world.height))
+            food_unit = Food(random.randrange(0, world.width), random.randrange(0, world.height))
             world.food.append(food_unit)
 
 
@@ -128,7 +128,7 @@ class FightProcessor(WorldProcessor):
             if target is worm:
                 continue
 
-            if worm.relative_check(target) is True:
+            if worm.is_relative_to(target):
                 continue
 
             worm.strike(target)
