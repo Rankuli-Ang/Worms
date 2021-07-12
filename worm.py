@@ -21,8 +21,6 @@ class Role:
 class Food(Role):
     def __init__(self, coordinate_x, coordinate_y):
         super().__init__(coordinate_x, coordinate_y)
-        self.coordinate_x: int = coordinate_x
-        self.coordinate_y: int = coordinate_y
         self.nutritional_value: int = random.randint(1, 5)
 
     @property
@@ -105,11 +103,8 @@ class Worm(Role):
     def poison(self, target):
         target.poisoned += random.randint(1, 3)
 
-    def relative_check(self, other) -> bool:
-        if abs(self.genotype - other.genotype) > 0.000000000001:
-            return False
-        else:
-            return True
+    def is_relative_to(self, other) -> bool:
+        return abs(self.genotype - other.genotype) < 1e-12
 
     def strike(self, other):
         if not self.dead:
@@ -120,14 +115,17 @@ class Worm(Role):
                 self.poison(other)
 
     def eat(self, target_food):
-        if target_food.nutritional_value > 0:
-            self.health += target_food.nutritional_value
-            target_food.nutritional_value = 0
+        if not self.dead:
+            if target_food.nutritional_value > 0:
+                self.health += target_food.nutritional_value
+                target_food.nutritional_value = 0
 
     def move(self, dx: int, dy: int, border_x: int, border_y: int) -> None:
-        assert abs(dx) + abs(dy) == 1
-        self.coordinate_x += dx
-        self.coordinate_y += dy
+        if not self.dead:
+            assert abs(dx) + abs(dy) == 1
+            self.coordinate_x += dx
+            self.coordinate_y += dy
 
-        self.coordinate_y = min(max(self.coordinate_y, 0), border_y - 1)
-        self.coordinate_x = min(max(self.coordinate_x, 0), border_x - 1)
+            self.coordinate_y = min(max(self.coordinate_y, 0), border_y - 1)
+            self.coordinate_x = min(max(self.coordinate_x, 0), border_x - 1)
+
