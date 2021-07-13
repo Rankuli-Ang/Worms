@@ -23,6 +23,10 @@ class Food(Role):
         super().__init__(coordinate_x, coordinate_y)
         self.nutritional_value: int = random.randint(1, 5)
 
+    @property
+    def eaten(self) -> bool:
+        return self.nutritional_value <= 0
+
 
 class Worm(Role):
     def __init__(self, coordinate_x, coordinate_y):
@@ -37,6 +41,8 @@ class Worm(Role):
         self.level: int = 1
         self.experience: int = 0
         self.poisoned: int = 0
+        self.genotype: float = random.random()
+        self.divisions_limit: int = 0
 
     def describe(self):
         print(f'Worm {self.name}:')
@@ -47,6 +53,8 @@ class Worm(Role):
         print(f'\tlevel {self.level}')
         print(f'\texperience {self.experience}')
         print(f'\tpoisoned {self.poisoned}')
+        print(f'\tgenotype {self.genotype}')
+        print(f'\tdivisions_number {self.divisions_limit}')
 
     def level_up(self):
         if self.dead:
@@ -67,6 +75,8 @@ class Worm(Role):
         if self.defense <= 0.2:
             self.defense = 0.2
 
+        self.division_potential()
+
     def level_up_damage(self):
         self.damage += 2
         self.health += self.level // 3 + 3
@@ -82,25 +92,40 @@ class Worm(Role):
         self.health += self.level // 3 + 3
         return self.initiative
 
+    def division_potential(self):
+        if self.level > 2:
+            self.divisions_limit += 1
+
     @property
     def dead(self) -> bool:
         return self.health <= 0
+
+    def poison(self, target):
+        target.poisoned += random.randint(1, 3)
+
+    def is_relative_to(self, other) -> bool:
+        return abs(self.genotype - other.genotype) < 1e-12
 
     def strike(self, other):
         if not self.dead:
             other.health -= self.damage * other.defense
             self.experience += 1
+            saving_throw = random.randint(1, 10)
+            if saving_throw <= 3:
+                self.poison(other)
 
-    '''
-    def poison_effect(self):
-        if self.poisoned > 0:
-            self.health -= 1
-            self.poisoned -= 1'''
+    def eat(self, target_food):
+        if not self.dead:
+            if target_food.nutritional_value > 0:
+                self.health += target_food.nutritional_value
+                target_food.nutritional_value = 0
 
     def move(self, dx: int, dy: int, border_x: int, border_y: int) -> None:
-        assert abs(dx) + abs(dy) == 1
-        self.coordinate_x += dx
-        self.coordinate_y += dy
+        if not self.dead:
+            assert abs(dx) + abs(dy) == 1
+            self.coordinate_x += dx
+            self.coordinate_y += dy
 
-        self.coordinate_y = min(max(self.coordinate_y, 0), border_y - 1)
-        self.coordinate_x = min(max(self.coordinate_x, 0), border_x - 1)
+            self.coordinate_y = min(max(self.coordinate_y, 0), border_y - 1)
+            self.coordinate_x = min(max(self.coordinate_x, 0), border_x - 1)
+
