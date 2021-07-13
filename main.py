@@ -38,6 +38,22 @@ class World:
     def food_at(self, x: int, y: int) -> List[Food]:
         return [food_unit for food_unit in self.food if food_unit.coordinate_x == x and food_unit.coordinate_y == y]
 
+    def search_food_location(self, x: int, y: int) -> list[tuple[int, int]]:
+        variations = {(0, -1): len(list(world.food_at(x, y - 1))),
+                      (1, 0): len(list(world.food_at(x + 1, y))),
+                      (0, 1): len(list(world.food_at(x, y + 1))),
+                      (-1, 0): len(list(world.food_at(x - 1, y)))}
+        number_of_food = variations.values()
+        for path in number_of_food:
+            max_number_of_food = 0
+            if path > max_number_of_food:
+                max_number_of_food = path
+        chosen_ways = []
+        for var in variations:
+            if variations.get(var) == max_number_of_food:
+                chosen_ways.append(var)
+        return chosen_ways
+
 
 def populate_world(world: World, worms_num: int = 100) -> None:
     for i in range(worms_num):
@@ -63,7 +79,10 @@ class Visualizer(WorldProcessor):
     def __init__(self):
         super(Visualizer, self).__init__()
 
-        self._color_worm = (255, 255, 255)
+        self._color_worm_generation_0 = (255, 255, 255)
+        self._color_worm_generation_1 = (255, 0, 0)
+        self._color_worm_generation_2 = (0, 255, 0)
+        self._color_worm_generation_3 = (0, 255, 255)
         self._color_space = (0, 0, 0)
         self._color_food = (0, 0, 255)
 
@@ -71,7 +90,16 @@ class Visualizer(WorldProcessor):
         vis = np.zeros((world.height, world.width, 3), dtype='uint8')
 
         for worm in world.worms:
-            vis[worm.coordinate_y, worm.coordinate_x] = self._color_worm
+            if worm.generation == 0:
+                vis[worm.coordinate_y, worm.coordinate_x] = self._color_worm_generation_0
+            elif worm.generation == 1:
+                vis[worm.coordinate_y, worm.coordinate_x] = self._color_worm_generation_1
+            elif worm.generation == 2:
+                vis[worm.coordinate_y, worm.coordinate_x] = self._color_worm_generation_2
+            elif worm.generation == 3:
+                vis[worm.coordinate_y, worm.coordinate_x] = self._color_worm_generation_3
+            else:
+                vis[worm.coordinate_y, worm.coordinate_x] = self._color_worm_generation_0
 
         for food_unit in world.food:
             vis[food_unit.coordinate_y - 1, food_unit.coordinate_x - 1] = self._color_food  # непонятная проблема
@@ -100,9 +128,18 @@ class MovementProcessor(WorldProcessor):
 
     def process(self, world: World) -> None:
         for worm in world.worms_by_initiative:
-            movements = [(1, 0), (-1, 0), (0, 1), (0, -1)]
-            dcoord = random.choice(movements)
-            worm.move(dcoord[0], dcoord[1], world.width, world.height)
+            targets = world.food_at(worm.coordinate_x, worm.coordinate_y)
+            if len(targets) != 0:
+                continue
+            else:
+                movements = world.search_food_location(worm.coordinate_x, worm.coordinate_y)
+                if len(movements) != 0:
+                    dcoord = random.choice(movements)
+                    worm.move(dcoord[0], dcoord[1], world.width, world.height)
+                else:
+                    movements = [(1, 0), (-1, 0), (0, 1), (0, -1)]
+                    dcoord = random.choice(movements)
+                    worm.move(dcoord[0], dcoord[1], world.width, world.height)
 
 
 class PoisonProcessor(WorldProcessor):
@@ -201,6 +238,7 @@ class WormDivision(WorldProcessor):
                 child.genotype = parent.genotype + 0.00000000000001
                 world.worms.append(child)
                 parent.divisions_limit -= 1
+                child.generation = parent.generation + 1
 
 
 if __name__ == "__main__":
@@ -215,4 +253,3 @@ if __name__ == "__main__":
     while True:
         for proc in processors:
             proc.process(world)
-
