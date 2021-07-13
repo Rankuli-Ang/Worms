@@ -42,6 +42,7 @@ class Worm(Role):
         self.experience: int = 0
         self.poisoned: int = 0
         self.genotype: float = random.random()
+        self.generation: int = 0
         self.divisions_limit: int = 0
 
     def describe(self):
@@ -54,6 +55,7 @@ class Worm(Role):
         print(f'\texperience {self.experience}')
         print(f'\tpoisoned {self.poisoned}')
         print(f'\tgenotype {self.genotype}')
+        print(f'\tgeneration {self.generation}')
         print(f'\tdivisions_number {self.divisions_limit}')
 
     def level_up(self):
@@ -106,7 +108,19 @@ class Worm(Role):
     def is_relative_to(self, other) -> bool:
         return abs(self.genotype - other.genotype) < 1e-12
 
-    def strike(self, other):
+    def is_dangerous_here(self, other) -> bool:
+        if other.health > self.health:
+            return True
+        else:
+            return False
+
+    def is_safe_here(self, other) -> bool:
+        if self.health > other.health:
+            return True
+        else:
+            return False
+
+    def strike(self, other) -> None:
         if not self.dead:
             other.health -= self.damage * other.defense
             self.experience += 1
@@ -114,7 +128,7 @@ class Worm(Role):
             if saving_throw <= 3:
                 self.poison(other)
 
-    def eat(self, target_food):
+    def eat(self, target_food) -> None:
         if not self.dead:
             if target_food.nutritional_value > 0:
                 self.health += target_food.nutritional_value
@@ -128,4 +142,3 @@ class Worm(Role):
 
             self.coordinate_y = min(max(self.coordinate_y, 0), border_y - 1)
             self.coordinate_x = min(max(self.coordinate_x, 0), border_x - 1)
-
