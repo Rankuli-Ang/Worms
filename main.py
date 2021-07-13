@@ -38,7 +38,7 @@ class World:
     def food_at(self, x: int, y: int) -> List[Food]:
         return [food_unit for food_unit in self.food if food_unit.coordinate_x == x and food_unit.coordinate_y == y]
 
-    def search_food_location(self, x: int, y: int) -> list[tuple[int, int]]:
+    def search_food_nearby(self, x: int, y: int) -> list[tuple[int, int]]:
         variations = {(0, -1): len(list(world.food_at(x, y - 1))),
                       (1, 0): len(list(world.food_at(x + 1, y))),
                       (0, 1): len(list(world.food_at(x, y + 1))),
@@ -53,6 +53,24 @@ class World:
             if variations.get(var) == max_number_of_food:
                 chosen_ways.append(var)
         return chosen_ways
+
+    def search_save_location_nearby(self, x: int, y: int, reference_health: int) -> list[tuple[int, int]]:
+        variations = {(0, -1): world.worms_at(x, y - 1),
+                      (1, 0): world.worms_at(x + 1, y),
+                      (0, 1): world.worms_at(x, y + 1),
+                      (-1, 0): world.worms_at(x - 1, y)}
+        chosen_ways = [(0, -1), (1, 0), (0, 1), (-1, 0)]
+        for var in variations:
+            enemies = variations.get(var)
+            for enemy in enemies:
+                if enemy.health > reference_health:
+                    if var in chosen_ways:
+                        chosen_ways.remove(var)      
+        return chosen_ways
+
+
+
+
 
 
 def populate_world(world: World, worms_num: int = 100) -> None:
@@ -128,18 +146,54 @@ class MovementProcessor(WorldProcessor):
 
     def process(self, world: World) -> None:
         for worm in world.worms_by_initiative:
-            targets = world.food_at(worm.coordinate_x, worm.coordinate_y)
-            if len(targets) != 0:
-                continue
+            enemies = world.worms_at(worm.coordinate_x, worm.coordinate_y)
+            if len(enemies) > 1:
+                for enemy in enemies:
+                    if worm.is_dangerous_here(enemy):
+                        danger_free_movements = world.search_save_location_nearby(worm.coordinate_x,
+                                                                                  worm.coordinate_y, worm.health)
+                        if len(danger_free_movements) == 0:
+                            break
+                        else:
+                            movements_with_food = world.search_food_nearby(worm.coordinate_x, worm.coordinate_y)
+                            chosen_movements = []
+                            for way in danger_free_movements:
+                                for path in movements_with_food:
+                                    if way == path:
+                                        chosen_movements.append(way)
+                            if len(chosen_movements) != 0:
+                                dcoord = random.choice(chosen_movements)
+                                worm.move(dcoord[0], dcoord[1], world.width, world.height)
+                                break
+                            else:
+                                dcoord = random.choice(danger_free_movements)
+                                worm.move(dcoord[0], dcoord[1], world.width, world.height)
+                                break
             else:
-                movements = world.search_food_location(worm.coordinate_x, worm.coordinate_y)
-                if len(movements) != 0:
-                    dcoord = random.choice(movements)
-                    worm.move(dcoord[0], dcoord[1], world.width, world.height)
+                targets = world.food_at(worm.coordinate_x, worm.coordinate_y)
+                if len(targets) != 0:
+                    continue
                 else:
-                    movements = [(1, 0), (-1, 0), (0, 1), (0, -1)]
-                    dcoord = random.choice(movements)
-                    worm.move(dcoord[0], dcoord[1], world.width, world.height)
+                    danger_free_movements = world.search_save_location_nearby(worm.coordinate_x,
+                                                                              worm.coordinate_y, worm.health)
+                    if len(danger_free_movements) == 0:
+                        continue
+                    else:
+                        movements_with_food = world.search_food_nearby(worm.coordinate_x, worm.coordinate_y)
+                        chosen_movements = []
+                        for way in danger_free_movements:
+                            for path in movements_with_food:
+                                if way == path:
+                                    chosen_movements.append(way)
+                        if len(chosen_movements) != 0:
+                            dcoord = random.choice(chosen_movements)
+                            worm.move(dcoord[0], dcoord[1], world.width, world.height)
+                            continue
+                        else:
+                            dcoord = random.choice(danger_free_movements)
+                            worm.move(dcoord[0], dcoord[1], world.width, world.height)
+                            continue
+
 
 
 class PoisonProcessor(WorldProcessor):
@@ -243,7 +297,7 @@ class WormDivision(WorldProcessor):
 
 if __name__ == "__main__":
     world = World()
-    populate_world(world, 1000)
+    populate_world(world, 500)
     sow_food(world, 1000)
 
     processors = [MovementProcessor(), PoisonProcessor(), FightProcessor(), CorpseGrindingProcessor(),
