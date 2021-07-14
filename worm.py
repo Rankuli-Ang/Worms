@@ -35,6 +35,7 @@ class Worm(Role):
         self.coordinate_x: int = coordinate_x
         self.coordinate_y: int = coordinate_y
         self.health: int = random.randint(6, 9)
+        self.energy: int = 100
         self.damage: int = random.randint(1, 3)
         self.defense: float = random.uniform(0.8, 0.95)
         self.initiative: int = random.randint(1, 3)
@@ -48,6 +49,7 @@ class Worm(Role):
     def describe(self):
         print(f'Worm {self.name}:')
         print(f'\thealth {self.health}')
+        print(f'\tenergy {self.energy}')
         print(f'\tdamage {self.damage}')
         print(f'\tdefense {self.defense}')
         print(f'\tinitiative {self.initiative}')
@@ -109,21 +111,16 @@ class Worm(Role):
         return abs(self.genotype - other.genotype) < 1e-12
 
     def is_dangerous_here(self, other) -> bool:
-        if other.health > self.health:
-            return True
-        else:
-            return False
+        return other.health > self.health
 
     def is_safe_here(self, other) -> bool:
-        if self.health > other.health:
-            return True
-        else:
-            return False
+        return self.health > other.health
 
     def strike(self, other) -> None:
         if not self.dead:
             other.health -= self.damage * other.defense
             self.experience += 1
+            self.energy -= 2
             saving_throw = random.randint(1, 10)
             if saving_throw <= 3:
                 self.poison(other)
@@ -132,6 +129,7 @@ class Worm(Role):
         if not self.dead:
             if target_food.nutritional_value > 0:
                 self.health += target_food.nutritional_value
+                self.energy += target_food.nutritional_value * 5
                 target_food.nutritional_value = 0
 
     def move(self, dx: int, dy: int, border_x: int, border_y: int) -> None:
@@ -142,3 +140,4 @@ class Worm(Role):
 
             self.coordinate_y = min(max(self.coordinate_y, 0), border_y - 1)
             self.coordinate_x = min(max(self.coordinate_x, 0), border_x - 1)
+            self.energy -= 1
