@@ -49,8 +49,8 @@ class World:
 
     def search_location_with_enemy(self, x: int, y: int):
         variations = [(x, y - 1), (x + 1, y), (x, y + 1), (x - 1, y)]
-        return [(c, v) for (c, v) in variations for worm in self.worms if worm.coordinate_y == y and
-                worm.coordinate_x == x]
+        return [(c, v) for (c, v) in variations for worm in self.worms if worm.coordinate_y == c and
+                worm.coordinate_x == v]
 
     def search_save_location_nearby(self, x: int, y: int, reference_health: int):
         locations_with_enemy = world.search_location_with_enemy(x, y)
