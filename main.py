@@ -43,34 +43,26 @@ class World:
                       (1, 0): len(list(world.food_at(x + 1, y))),
                       (0, 1): len(list(world.food_at(x, y + 1))),
                       (-1, 0): len(list(world.food_at(x - 1, y)))}
-        number_of_food = variations.values()
-        for path in number_of_food:
-            max_number_of_food = 0
-            if path > max_number_of_food:
-                max_number_of_food = path
-        chosen_ways = []
-        for var in variations:
-            if variations.get(var) == max_number_of_food:
-                chosen_ways.append(var)
-        return chosen_ways
+        max_value = max(variations.values())
 
-    def search_save_location_nearby(self, x: int, y: int, reference_health: int) -> list[tuple[int, int]]:
-        variations = {(0, -1): world.worms_at(x, y - 1),
-                      (1, 0): world.worms_at(x + 1, y),
-                      (0, 1): world.worms_at(x, y + 1),
-                      (-1, 0): world.worms_at(x - 1, y)}
-        chosen_ways = [(0, -1), (1, 0), (0, 1), (-1, 0)]
-        for var in variations:
-            enemies = variations.get(var)
-            for enemy in enemies:
+        return [key for key in variations.keys() if variations[key] == max_value]
+
+    def search_location_with_enemy(self, x: int, y: int):
+        variations = [(x, y - 1), (x + 1, y), (x, y + 1), (x - 1, y)]
+        return [(c, v) for (c, v) in variations for worm in self.worms if worm.coordinate_y == y and
+                worm.coordinate_x == x]
+
+    def search_save_location_nearby(self, x: int, y: int, reference_health: int):
+        locations_with_enemy = world.search_location_with_enemy(x, y)
+        safe_location = {(x, y - 1): (0, -1), (x + 1, y): (1, 0), (x, y + 1): (0, 1), (x - 1, y): (-1, 0)}
+        for (c, v) in locations_with_enemy:
+            enemy_in = world.worms_at(c, v)
+            for enemy in enemy_in:
                 if enemy.health > reference_health:
-                    if var in chosen_ways:
-                        chosen_ways.remove(var)      
-        return chosen_ways
-
-
-
-
+                    if (c, v) in safe_location.keys():
+                        safe_location.pop((c, v))
+        safe = list(safe_location.values())
+        return safe
 
 
 def populate_world(world: World, worms_num: int = 100) -> None:
@@ -106,21 +98,16 @@ class Visualizer(WorldProcessor):
 
     def process(self, world: World) -> None:
         vis = np.zeros((world.height, world.width, 3), dtype='uint8')
-
+        worm_color = [self._color_worm_generation_0, self._color_worm_generation_1, self._color_worm_generation_2,
+                      self._color_worm_generation_3]
         for worm in world.worms:
-            if worm.generation == 0:
-                vis[worm.coordinate_y, worm.coordinate_x] = self._color_worm_generation_0
-            elif worm.generation == 1:
-                vis[worm.coordinate_y, worm.coordinate_x] = self._color_worm_generation_1
-            elif worm.generation == 2:
-                vis[worm.coordinate_y, worm.coordinate_x] = self._color_worm_generation_2
-            elif worm.generation == 3:
-                vis[worm.coordinate_y, worm.coordinate_x] = self._color_worm_generation_3
+            if worm.generation < 4:
+                vis[worm.coordinate_y, worm.coordinate_x] = worm_color[worm.generation]
             else:
-                vis[worm.coordinate_y, worm.coordinate_x] = self._color_worm_generation_0
+                vis[worm.coordinate_y, worm.coordinate_x] = worm_color[worm.generation - 4]
 
         for food_unit in world.food:
-            vis[food_unit.coordinate_y - 1, food_unit.coordinate_x - 1] = self._color_food  # непонятная проблема
+            vis[food_unit.coordinate_y, food_unit.coordinate_x] = self._color_food
 
         scale = 4
         vis = cv2.resize(vis, None, fx=scale, fy=scale, interpolation=cv2.INTER_NEAREST)
@@ -134,10 +121,20 @@ class AddFoodProcessor(WorldProcessor):
         super(AddFoodProcessor, self).__init__()
 
     def process(self, world: World) -> None:
-        growth = random.randint(5, 10)
+        growth = random.randint(10, 20)
         for i in range(growth):
             food_unit = Food(random.randrange(0, world.width), random.randrange(0, world.height))
             world.food.append(food_unit)
+
+
+class ZeroEnergyProcessor(WorldProcessor):
+    def __init__(self):
+        super(ZeroEnergyProcessor, self).__init__()
+
+    def process(self, world: World) -> None:
+        for worm in world.worms_by_initiative:
+            if worm.energy <= 0:
+                worm.health = 0
 
 
 class MovementProcessor(WorldProcessor):
@@ -146,54 +143,51 @@ class MovementProcessor(WorldProcessor):
 
     def process(self, world: World) -> None:
         for worm in world.worms_by_initiative:
-            enemies = world.worms_at(worm.coordinate_x, worm.coordinate_y)
-            if len(enemies) > 1:
-                for enemy in enemies:
-                    if worm.is_dangerous_here(enemy):
-                        danger_free_movements = world.search_save_location_nearby(worm.coordinate_x,
-                                                                                  worm.coordinate_y, worm.health)
+            if not worm.dead:
+                enemies = [enemy for enemy in world.worms_at(worm.coordinate_x, worm.coordinate_y) if enemy is not worm]
+                if len(enemies) > 0:
+                    for enemy in enemies:
+                        if worm.is_dangerous_here(enemy):
+                            danger_free_movements = world.search_save_location_nearby(worm.coordinate_x,
+                                                                                      worm.coordinate_y,
+                                                                                      worm.health)
+                            if len(danger_free_movements) == 0:
+                                break
+                            else:
+                                movements_with_food = world.search_food_nearby(worm.coordinate_x, worm.coordinate_y)
+                                chosen_movements = [way for way in danger_free_movements for path in movements_with_food
+                                                    if way == path]
+
+                                if len(chosen_movements) != 0:
+                                    dcoord = random.choice(chosen_movements)
+                                    worm.move(dcoord[0], dcoord[1], world.width, world.height)
+                                    break
+                                else:
+                                    dcoord = random.choice(danger_free_movements)
+                                    worm.move(dcoord[0], dcoord[1], world.width, world.height)
+                                    break
+                else:
+                    targets = world.food_at(worm.coordinate_x, worm.coordinate_y)
+                    if len(targets) != 0:
+                        continue
+                    else:
+                        danger_free_movements = world.search_save_location_nearby(worm.coordinate_x, worm.coordinate_y,
+                                                                                  worm.health)
                         if len(danger_free_movements) == 0:
-                            break
+                            continue
                         else:
                             movements_with_food = world.search_food_nearby(worm.coordinate_x, worm.coordinate_y)
-                            chosen_movements = []
-                            for way in danger_free_movements:
-                                for path in movements_with_food:
-                                    if way == path:
-                                        chosen_movements.append(way)
+                            chosen_movements = [way for way in danger_free_movements for path in movements_with_food
+                                                if way == path]
+
                             if len(chosen_movements) != 0:
                                 dcoord = random.choice(chosen_movements)
                                 worm.move(dcoord[0], dcoord[1], world.width, world.height)
-                                break
+                                continue
                             else:
                                 dcoord = random.choice(danger_free_movements)
                                 worm.move(dcoord[0], dcoord[1], world.width, world.height)
-                                break
-            else:
-                targets = world.food_at(worm.coordinate_x, worm.coordinate_y)
-                if len(targets) != 0:
-                    continue
-                else:
-                    danger_free_movements = world.search_save_location_nearby(worm.coordinate_x,
-                                                                              worm.coordinate_y, worm.health)
-                    if len(danger_free_movements) == 0:
-                        continue
-                    else:
-                        movements_with_food = world.search_food_nearby(worm.coordinate_x, worm.coordinate_y)
-                        chosen_movements = []
-                        for way in danger_free_movements:
-                            for path in movements_with_food:
-                                if way == path:
-                                    chosen_movements.append(way)
-                        if len(chosen_movements) != 0:
-                            dcoord = random.choice(chosen_movements)
-                            worm.move(dcoord[0], dcoord[1], world.width, world.height)
-                            continue
-                        else:
-                            dcoord = random.choice(danger_free_movements)
-                            worm.move(dcoord[0], dcoord[1], world.width, world.height)
-                            continue
-
+                                continue
 
 
 class PoisonProcessor(WorldProcessor):
@@ -269,7 +263,8 @@ class CorpseGrindingProcessor(WorldProcessor):
             for eater in eaters:
                 if eater.dead:
                     continue
-                eater.health += worm.level
+                eater.health += worm.level + worm.damage + worm.initiative
+                eater.energy += (worm.level + worm.damage + worm.initiative) * 5
 
 
 class DeadWormsRemover(WorldProcessor):
@@ -300,7 +295,7 @@ if __name__ == "__main__":
     populate_world(world, 500)
     sow_food(world, 1000)
 
-    processors = [MovementProcessor(), PoisonProcessor(), FightProcessor(), CorpseGrindingProcessor(),
+    processors = [ZeroEnergyProcessor(), PoisonProcessor(), MovementProcessor(), FightProcessor(), CorpseGrindingProcessor(),
                   FoodPickUpProcessor(), DeadWormsRemover(), EatenFoodRemover(), LevelUpProcessor(),
                   AddFoodProcessor(), WormDivision(), Visualizer()]
 
