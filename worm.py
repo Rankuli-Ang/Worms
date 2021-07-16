@@ -45,6 +45,7 @@ class Worm(Role):
         self.genotype: float = random.random()
         self.generation: int = 0
         self.divisions_limit: int = 0
+        self.age: int = 0
 
     def describe(self):
         print(f'Worm {self.name}:')
@@ -104,6 +105,14 @@ class Worm(Role):
     def dead(self) -> bool:
         return self.health <= 0
 
+    def aging_factor(self) -> int:
+        if self.age > 100:
+            return 3
+        elif self.age > 50:
+            return 2
+        else:
+            return 1
+
     def poison(self, target):
         target.poisoned += random.randint(1, 3)
 
@@ -117,10 +126,10 @@ class Worm(Role):
         return self.health > other.health
 
     def strike(self, other) -> None:
-        if not self.dead:
+        if not self.dead and self.energy > 0:
             other.health -= self.damage * other.defense
             self.experience += 1
-            self.energy -= 2
+            self.energy -= 2 * self.aging_factor()
             saving_throw = random.randint(1, 10)
             if saving_throw <= 3:
                 self.poison(other)
@@ -131,13 +140,20 @@ class Worm(Role):
                 self.health += target_food.nutritional_value
                 self.energy += target_food.nutritional_value * 5
                 target_food.nutritional_value = 0
+                if self.energy > 120:
+                    self.divisions_limit += 1
+                    self.energy -= 20
 
     def move(self, dx: int, dy: int, border_x: int, border_y: int) -> None:
-        if not self.dead:
+        if not self.dead and self.energy > 0:
             assert abs(dx) + abs(dy) == 1
             self.coordinate_x += dx
             self.coordinate_y += dy
 
             self.coordinate_y = min(max(self.coordinate_y, 0), border_y - 1)
             self.coordinate_x = min(max(self.coordinate_x, 0), border_x - 1)
-            self.energy -= 1
+            self.energy -= 1 * self.aging_factor()
+
+
+
+
