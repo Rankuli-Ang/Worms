@@ -1,18 +1,25 @@
 import random
 from typing import List
+from collections import namedtuple
+from enum import Enum
 
 import cv2
 import numpy as np
 
 from worm import Role, Worm, Food
 
-iterations = 0
-
 
 # from opencv import * # плохой тон
 
 # import opencv
 # class Home(opencv.Role)
+
+class Neighbors(Enum):
+    UP = (0, -1)
+    RIGHT = (1, 0)
+    DOWN = (0, 1)
+    LEFT = (-1, 0)
+
 
 class Home(Role):
     def __init__(self):
@@ -40,48 +47,56 @@ class World:
     def food_at(self, x: int, y: int) -> List[Food]:
         return [food_unit for food_unit in self.food if food_unit.coordinate_x == x and food_unit.coordinate_y == y]
 
-    def cell_scanning(self, x: int, y: int):
+    def get_cell_resources(self, x: int, y: int):
         max_health_enemy = 0
-        food_presense = 'no'
-        for worm in self.worms:
-            if worm.coordinate_y == y and worm.coordinate_x == x:
-                if worm.health > max_health_enemy:
-                    max_health_enemy = worm.health
-        for food_unit in self.food:
-            if food_unit.coordinate_x == x and food_unit.coordinate_y == y:
-                food_presense = 'yes'
-        cell = {'food': food_presense, 'max_health_enemy': max_health_enemy, 'coordinates': (x, y)}
+        food_presense = False
+        worms_in_cell = world.worms_at(x, y)
+        if len(worms_in_cell) > 0:
+            max_health_enemy = max([worm.health for worm in worms_in_cell])
+
+        food_in_cell = world.food_at(x, y)
+        if len(food_in_cell) > 0:
+            food_presense = True
+        Cell = namedtuple('Cell', ['food', 'max_health_enemy'])
+        cell = Cell(food_presense, max_health_enemy)
         return cell
+
+    def get_neighbour_cells_resources(self, x: int, y: int):
+
+        neighbour_cells_resources = {Neighbors.UP: world.get_cell_resources(x, y - 1),
+                                     Neighbors.RIGHT: world.get_cell_resources(x + 1, y),
+                                     Neighbors.DOWN: world.get_cell_resources(x, y + 1),
+                                     Neighbors.LEFT: world.get_cell_resources(x - 1, y)}
+        return neighbour_cells_resources
+
+    '''def cell_coordinates_into_moves(self, ways: list, x: int, y: int):
+        for (c, v) in ways:
+            (c, v) = (c - x, v - y)
+        return ways'''
 
     def test_new_save_location(self, x: int, y: int, reference_health: int):
         selected_ways = []
         best_ways = []
-        '''best_choice_is_not_to_move = (x, y)'''
-        up = self.cell_scanning(x, y - 1)
-        down = self.cell_scanning(x, y + 1)
-        left = self.cell_scanning(x - 1, y)
-        right = self.cell_scanning(x + 1, y)
-        variations = [up, down, left, right]
+        variations = world.get_neighbour_cells_resources(x, y)
+        '''here = self.get_cell_resources(x, y)
+        up = self.get_cell_resources(x, y - 1)
+        down = self.get_cell_resources(x, y + 1)
+        left = self.get_cell_resources(x - 1, y)
+        right = self.get_cell_resources(x + 1, y)
+        variations = [here, up, down, left, right]'''
         for variation in variations:
-            if variation.get('max_health_enemy') < reference_health:
-                selected_ways.append(variation.get('coordinates'))
-                if variation.get('food') == 'yes':
-                    best_ways.append(variation.get('coordinates'))
+            element = variations.setdefault(variation)
+            if getattr(element, 'max_health_enemy') < reference_health:
+                selected_ways.append(variation.value)
+                if getattr(element, 'food') is True:
+                    best_ways.append(variation.value)
 
         if len(best_ways) > 0:
-            final_best_ways = []
-            for (c, v) in best_ways:
-                (c, v) = (x - c, y - v)
-                final_best_ways.append((c, v))
-            return final_best_ways
+            return best_ways
         else:
-            final_selected_ways = []
-            for (c, v) in selected_ways:
-                (c, v) = (x - c, y - v)
-                final_selected_ways.append((c, v))
-            return final_selected_ways
+            return selected_ways
 
-    def search_food_nearby(self, x: int, y: int) -> list[tuple[int, int]]:
+    '''def search_food_nearby(self, x: int, y: int) -> list[tuple[int, int]]:
         variations = {(0, -1): len(list(world.food_at(x, y - 1))),
                       (1, 0): len(list(world.food_at(x + 1, y))),
                       (0, 1): len(list(world.food_at(x, y + 1))),
@@ -101,12 +116,10 @@ class World:
         for (c, v) in locations_with_enemy:
             enemy_in = world.worms_at(c, v)
             for enemy in enemy_in:
-                if enemy.health > reference_health:
-                    if enemy.energy > 0:
-                        if (c, v) in safe_location.keys():
-                            safe_location.pop((c, v))
+                if enemy.health > reference_health and enemy.energy > 0 and (c, v) in safe_location.keys():
+                    safe_location.pop((c, v))
         safe = list(safe_location.values())
-        return safe
+        return safe'''
 
 
 def populate_world(world: World, worms_num: int = 100) -> None:
@@ -201,27 +214,23 @@ class MovementProcessor(WorldProcessor):
                 if len(enemies) > 0:
                     for enemy in enemies:
                         if worm.is_dangerous_here(enemy):
-                            danger_free_movements = world.test_new_save_location(worm.coordinate_x, worm.coordinate_y,
-                                                                                 worm.health)
-                            if len(danger_free_movements) == 0:
-                                break
-                            else:
-                                dcoord = random.choice(danger_free_movements)
+                            chosen_movements = world.test_new_save_location(worm.coordinate_x,
+                                                                                      worm.coordinate_y,
+                                                                                      worm.health)
+                            if len(chosen_movements) != 0:
+                                dcoord = random.choice(chosen_movements)
                                 worm.move(dcoord[0], dcoord[1], world.width, world.height)
-                                break
+
                 else:
                     targets = world.food_at(worm.coordinate_x, worm.coordinate_y)
                     if len(targets) != 0:
                         continue
                     else:
-                        danger_free_movements = world.test_new_save_location(worm.coordinate_x, worm.coordinate_y,
-                                                                             worm.health)
-                        if len(danger_free_movements) == 0:
-                            continue
-                        else:
-                            dcoord = random.choice(danger_free_movements)
+                        chosen_movements = world.test_new_save_location(worm.coordinate_x, worm.coordinate_y,
+                                                                                  worm.health)
+                        if len(chosen_movements) != 0:
+                            dcoord = random.choice(chosen_movements)
                             worm.move(dcoord[0], dcoord[1], world.width, world.height)
-                            continue
 
 
 class PoisonProcessor(WorldProcessor):
@@ -327,11 +336,11 @@ class WormDivision(WorldProcessor):
 class TestAnalyticsProcessor(WorldProcessor):
     def __init__(self):
         super(TestAnalyticsProcessor, self).__init__()
+        self.iterations = 0
 
     def process(self, world: World) -> None:
-        global iterations
-        iterations += 1
-        print('iter', iterations)
+        self.iterations += 1
+        print('iter', self.iterations)
         print('number of worms', len(world.worms))
 
 
