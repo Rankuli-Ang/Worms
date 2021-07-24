@@ -13,14 +13,14 @@ worms_names = read_names("Names.txt")
 
 
 class Role:
-    def __init__(self, coordinate_x, coordinate_y):
-        self.coordinate_x: int = coordinate_x
-        self.coordinate_y: int = coordinate_y
+    def __init__(self, x, y):
+        self.x: int = x
+        self.y: int = y
 
 
 class Food(Role):
-    def __init__(self, coordinate_x, coordinate_y):
-        super().__init__(coordinate_x, coordinate_y)
+    def __init__(self, x, y):
+        super().__init__(x, y)
         self.nutritional_value: int = random.randint(1, 5)
 
     @property
@@ -29,11 +29,11 @@ class Food(Role):
 
 
 class Worm(Role):
-    def __init__(self, coordinate_x, coordinate_y):
-        super().__init__(coordinate_x, coordinate_y)
+    def __init__(self, x, y):
+        super().__init__(x, y)
         self.name: str = random.choice(worms_names)
-        self.coordinate_x: int = coordinate_x
-        self.coordinate_y: int = coordinate_y
+        self.x: int = x
+        self.y: int = y
         self.health: int = random.randint(6, 9)
         self.energy: int = 100
         self.damage: int = random.randint(1, 3)
@@ -47,7 +47,7 @@ class Worm(Role):
         self.divisions_limit: int = 0
         self.age: int = 0
 
-    def describe(self):
+    def describe(self) -> None:
         print(f'Worm {self.name}:')
         print(f'\thealth {self.health}')
         print(f'\tenergy {self.energy}')
@@ -61,7 +61,7 @@ class Worm(Role):
         print(f'\tgeneration {self.generation}')
         print(f'\tdivisions_number {self.divisions_limit}')
 
-    def level_up(self):
+    def level_up(self) -> None:
         if self.dead:
             return
         if self.experience < self.level + 2:
@@ -82,22 +82,22 @@ class Worm(Role):
 
         self.division_potential()
 
-    def level_up_damage(self):
+    def level_up_damage(self) -> int:
         self.damage += 2
         self.health += self.level // 3 + 3
         return self.damage
 
-    def level_up_defense(self):
+    def level_up_defense(self) -> float:
         self.defense -= self.level / 150 + 0.05
         self.health += self.level // 3 + 3
         return self.defense
 
-    def level_up_initiative(self):
+    def level_up_initiative(self) -> int:
         self.initiative += 1
         self.health += self.level // 3 + 3
         return self.initiative
 
-    def division_potential(self):
+    def division_potential(self) -> None:
         if self.level > 2:
             self.divisions_limit += 1
 
@@ -113,17 +113,22 @@ class Worm(Role):
         else:
             return 1
 
-    def poison(self, target):
+    def poison(self, target) -> None:
         target.poisoned += random.randint(1, 3)
 
     def is_relative_to(self, other) -> bool:
         return abs(self.genotype - other.genotype) < 1e-12
 
-    def is_dangerous_here(self, other) -> bool:
-        return other.health > self.health
+    def is_dangerous(self, other_value: int) -> bool:
+        return other_value > self.health
 
-    def is_safe_here(self, other) -> bool:
-        return self.health > other.health
+    def get_safe_steps(self, locations: dict) -> list:
+        safe_steps = []
+        for location in locations:
+            max_health_in_location = locations.setdefault(location)
+            if self.is_dangerous(max_health_in_location) is False:
+                safe_steps.append(location.value)
+        return safe_steps
 
     def strike(self, other) -> None:
         if not self.dead and self.energy > 0:
@@ -147,13 +152,9 @@ class Worm(Role):
     def move(self, dx: int, dy: int, border_x: int, border_y: int) -> None:
         if not self.dead and self.energy > 0:
             assert abs(dx) + abs(dy) == 1
-            self.coordinate_x += dx
-            self.coordinate_y += dy
+            self.x += dx
+            self.y += dy
 
-            self.coordinate_y = min(max(self.coordinate_y, 0), border_y - 1)
-            self.coordinate_x = min(max(self.coordinate_x, 0), border_x - 1)
+            self.y = min(max(self.y, 0), border_y - 1)
+            self.x = min(max(self.x, 0), border_x - 1)
             self.energy -= 1 * self.aging_factor()
-
-
-
-
