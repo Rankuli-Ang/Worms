@@ -130,6 +130,18 @@ class Worm(Role):
                 safe_steps.append(location.value)
         return safe_steps
 
+    def get_best_steps(self, safe_steps: list, steps_with_food: list) -> list:
+        best_steps = []
+        for step in steps_with_food:
+            if step in safe_steps:
+                best_steps.append(step)
+        if len(best_steps) > 0:
+            return best_steps
+        else:
+            return safe_steps
+
+
+
     def strike(self, other) -> None:
         if not self.dead and self.energy > 0:
             other.health -= self.damage * other.defense
