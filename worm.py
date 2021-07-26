@@ -1,4 +1,5 @@
 import random
+from collections import namedtuple
 
 
 def read_names(filename):
@@ -10,10 +11,12 @@ def read_names(filename):
 
 
 worms_names = read_names("Names.txt")
+cell = namedtuple('Cell', ['x', 'y'])
 
 
 class Role:
     def __init__(self, x, y):
+        self.coordinates = cell(x, y)
         self.x: int = x
         self.y: int = y
 
@@ -32,8 +35,6 @@ class Worm(Role):
     def __init__(self, x, y):
         super().__init__(x, y)
         self.name: str = random.choice(worms_names)
-        self.x: int = x
-        self.y: int = y
         self.health: int = random.randint(6, 9)
         self.energy: int = 100
         self.damage: int = random.randint(1, 3)
@@ -140,8 +141,6 @@ class Worm(Role):
         else:
             return safe_steps
 
-
-
     def strike(self, other) -> None:
         if not self.dead and self.energy > 0:
             other.health -= self.damage * other.defense
@@ -170,3 +169,12 @@ class Worm(Role):
             self.y = min(max(self.y, 0), border_y - 1)
             self.x = min(max(self.x, 0), border_x - 1)
             self.energy -= 1 * self.aging_factor()
+
+    def moving(self, step: tuple, border_x: int, border_y: int):
+        if not self.dead and self.energy > 0:
+            print('b', self.coordinates)
+            new_x = min(max(step[0] + self.coordinates[0], 0), border_x - 1)
+            new_y = min(max(step[1] + self.coordinates[1], 0), border_y - 1)
+            self.coordinates._replace(x=new_x, y=new_y)
+            self.energy -= 1 * self.aging_factor()
+            print('a', self.coordinates)
