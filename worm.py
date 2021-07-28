@@ -1,15 +1,18 @@
 import random
 from enum import Enum
+from collections import namedtuple
 
 
 class Genes(Enum):
-    ENERGETIC = 20
-    HEALTHY = 3
-    DAMAGING = 2
+    ENERGY = 20
+    HEALTH = 3
+    DAMAGE = 2
     DEFENSE = 0.1
 
 
-genes_variations = [Genes.HEALTHY, Genes.DAMAGING, Genes.ENERGETIC, Genes.DEFENSE]
+genes_variations = [Genes.HEALTH, Genes.DAMAGE, Genes.ENERGY, Genes.DEFENSE]
+
+cell = namedtuple('Cell', ['x', 'y'])
 
 
 def create_genome():
@@ -36,6 +39,7 @@ class Role:
     def __init__(self, x, y):
         self.x: int = x
         self.y: int = y
+        self.coordinates = cell(x, y)
 
 
 class Food(Role):
@@ -67,38 +71,14 @@ class Worm(Role):
         self.age: int = 0
         'genetics'
         self.genotype: list = []
-
-    def genetical_boost(self):
-        energetic_genes_pool = 0
-        health_genes_pool = 0
-        damage_genes_pool = 0
-        division_genes_pool = 0
-        for gene in self.genotype:
-            if gene is Genes.ENERGETIC:
-                energetic_genes_pool += 1
-                if energetic_genes_pool >= 3:
-                    self.energy += Genes.ENERGETIC.value
-                    energetic_genes_pool -= 3
-                continue
-            if gene is Genes.HEALTHY:
-                health_genes_pool += 1
-                if health_genes_pool >= 4:
-                    self.health += Genes.HEALTHY.value
-                    health_genes_pool -= 4
-                continue
-            if gene is Genes.DAMAGING:
-                damage_genes_pool += 1
-                if damage_genes_pool >= 5:
-                    self.damage += Genes.DAMAGING.value
-                    damage_genes_pool -= 5
-                continue
-            if gene is Genes.DEFENSE:
-                division_genes_pool += 1
-                if division_genes_pool >= 5:
-                    self.defense -= Genes.DEFENSE.value
-                    if self.defense < 0.2:
-                        self.defense = 0.2
-                    division_genes_pool -= 5
+        self.energetic_genes_pool: int = 0
+        self.health_genes_pool: int = 0
+        self.damage_genes_pool: int = 0
+        self.defense_genes_pool: int = 0
+        self.energetic_boost: int = 0
+        self.health_boost: int = 0
+        self.damage_boost: int = 0
+        self.defense_boost: int = 0
 
     def describe(self) -> None:
         print(f'Worm {self.name}:')
@@ -113,6 +93,90 @@ class Worm(Role):
         print(f'\tgenotype {self.family_affinity}')
         print(f'\tgeneration {self.generation}')
         print(f'\tdivisions_number {self.divisions_limit}')
+
+    def energetic_genes_score(self) -> None:
+        if self.energetic_genes_pool >= 3:
+            self.energy += Genes.ENERGY.value
+            self.energetic_genes_pool -= 3
+            self.energetic_boost += 1
+        if self.energetic_genes_pool < 0:
+            self.energy -= Genes.ENERGY.value
+            self.energetic_genes_pool += 3
+            self.energetic_boost -= 1
+
+    def health_genes_score(self) -> None:
+        if self.health_genes_pool >= 4:
+            self.health += Genes.HEALTH.value
+            self.health_genes_pool -= 4
+            self.health_boost += 1
+        if self.health_genes_pool < 0:
+            self.health -= Genes.HEALTH.value
+            self.health_genes_pool += 4
+            self.health_boost -= 1
+
+    def damage_genes_score(self) -> None:
+        if self.damage_genes_pool >= 5:
+            self.damage += Genes.DAMAGE.value
+            self.damage_genes_pool -= 5
+            self.damage_boost += 1
+        if self.damage_genes_pool < 0:
+            self.damage -= Genes.DAMAGE.value
+            self.damage_genes_pool += 5
+            self.damage_boost -= 1
+
+    def defense_genes_score(self) -> None:
+        if self.defense_genes_pool >= 5:
+            self.defense -= Genes.DEFENSE.value
+            if self.defense < 0.2:
+                self.defense = 0.2
+            self.defense_genes_pool -= 5
+            self.defense_boost += 1
+        if self.defense_genes_pool < 0:
+            self.defense += Genes.DEFENSE.value
+            self.defense_genes_pool += 5
+            self.defense_boost -= 1
+
+    def genetical_boost(self, gene: Genes) -> None:
+        if gene is Genes.ENERGY:
+            self.energetic_genes_pool += 1
+            self.energetic_genes_score()
+        if gene is Genes.HEALTH:
+            self.health_genes_pool += 1
+            self.health_genes_score()
+        if gene is Genes.DAMAGE:
+            self.damage_genes_pool += 1
+            self.damage_genes_score()
+        if gene is Genes.DEFENSE:
+            self.defense_genes_pool += 1
+            self.defense_genes_score()
+
+    def insertion_mutation(self) -> None:
+        inserted_gene = random.choice(genes_variations)
+        self.genotype += inserted_gene
+        self.genetical_boost(inserted_gene)
+
+    def deletion_mutation(self) -> None:
+        deleted_gene = random.choice(self.genotype)
+        if len(self.genotype) > 1:
+            self.genotype -= deleted_gene
+            if deleted_gene == Genes.ENERGY:
+                self.energetic_genes_pool -= 1
+                self.energetic_genes_score()
+            if deleted_gene == Genes.HEALTH:
+                self.health_genes_pool -= 1
+                self.health_genes_score()
+            if deleted_gene == Genes.DAMAGE:
+                self.damage_genes_pool -= 1
+                self.damage_genes_score()
+            if deleted_gene == Genes.DEFENSE:
+                self.defense_genes_pool -= 1
+                self.defense_genes_score()
+        else:
+            self.health = 0
+
+    def substitution_mutation(self) -> None:
+        self.deletion_mutation()
+        self.insertion_mutation()
 
     def level_up(self) -> None:
         if self.dead:
@@ -222,3 +286,11 @@ class Worm(Role):
             self.x = min(max(self.x, 0), border_x - 1)
             self.energy -= 1 * self.aging_factor()
 
+    '''def moving(self, step: tuple, border_x: int, border_y: int):
+        if not self.dead and self.energy > 0:
+            print('b', self.coordinates)
+            new_x = min(max(step[0] + self.coordinates.__getattribute__('x'), 0), border_x - 1)
+            new_y = min(max(step[1] + self.coordinates.__getattribute__('y'), 0), border_y - 1)
+            self.coordinates = cell(new_x, new_y)
+            self.energy -= 1 * self.aging_factor()
+            print('a', self.coordinates)'''
