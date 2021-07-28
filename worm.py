@@ -1,17 +1,24 @@
 import random
 from enum import Enum
 
-'''from collections import namedtuple'''
-
 
 class Genes(Enum):
+    ENERGETIC = 20
     HEALTHY = 3
     DAMAGING = 2
-    ENERGETIC = 20
-    DIVISIBLE = 1
+    DEFENSE = 0.1
 
 
-genes_variations = [Genes.HEALTHY, Genes.DAMAGING, Genes.ENERGETIC, Genes.DIVISIBLE]
+genes_variations = [Genes.HEALTHY, Genes.DAMAGING, Genes.ENERGETIC, Genes.DEFENSE]
+
+
+def create_genome():
+    genotype = []
+    genes_for_add = 12
+    while genes_for_add > 0:
+        genotype.append(random.choice(genes_variations))
+        genes_for_add -= 1
+    return genotype
 
 
 def read_names(filename):
@@ -23,12 +30,10 @@ def read_names(filename):
 
 
 worms_names = read_names("Names.txt")
-'''cell = namedtuple('Cell', ['x', 'y'])'''
 
 
 class Role:
     def __init__(self, x, y):
-        """self.coordinates = cell(x, y)"""
         self.x: int = x
         self.y: int = y
 
@@ -62,14 +67,38 @@ class Worm(Role):
         self.age: int = 0
         'genetics'
         self.genotype: list = []
-        self.creating_genome()
-        print(self.genotype)
 
-    def creating_genome(self):
-        genes_for_add = 12
-        while genes_for_add > 0:
-            self.genotype.append(random.choice(genes_variations))
-            genes_for_add -= 1
+    def genetical_boost(self):
+        energetic_genes_pool = 0
+        health_genes_pool = 0
+        damage_genes_pool = 0
+        division_genes_pool = 0
+        for gene in self.genotype:
+            if gene is Genes.ENERGETIC:
+                energetic_genes_pool += 1
+                if energetic_genes_pool >= 3:
+                    self.energy += Genes.ENERGETIC.value
+                    energetic_genes_pool -= 3
+                continue
+            if gene is Genes.HEALTHY:
+                health_genes_pool += 1
+                if health_genes_pool >= 4:
+                    self.health += Genes.HEALTHY.value
+                    health_genes_pool -= 4
+                continue
+            if gene is Genes.DAMAGING:
+                damage_genes_pool += 1
+                if damage_genes_pool >= 5:
+                    self.damage += Genes.DAMAGING.value
+                    damage_genes_pool -= 5
+                continue
+            if gene is Genes.DEFENSE:
+                division_genes_pool += 1
+                if division_genes_pool >= 5:
+                    self.defense -= Genes.DEFENSE.value
+                    if self.defense < 0.2:
+                        self.defense = 0.2
+                    division_genes_pool -= 5
 
     def describe(self) -> None:
         print(f'Worm {self.name}:')
@@ -179,9 +208,9 @@ class Worm(Role):
                 self.health += target_food.nutritional_value
                 self.energy += target_food.nutritional_value * 5
                 target_food.nutritional_value = 0
-                if self.energy > 120:
+                if self.energy > 150:
                     self.divisions_limit += 1
-                    self.energy -= 20
+                    self.energy -= 50
 
     def move(self, dx: int, dy: int, border_x: int, border_y: int) -> None:
         if not self.dead and self.energy > 0:
@@ -193,9 +222,3 @@ class Worm(Role):
             self.x = min(max(self.x, 0), border_x - 1)
             self.energy -= 1 * self.aging_factor()
 
-    '''def moving(self, step: tuple, coordinates: cell, border_x: int, border_y: int) -> None:
-        if not self.dead and self.energy > 0:
-            new_x = min(max(step[0] + coordinates[0], 0), border_x - 1)
-            new_y = min(max(step[1] + coordinates[1], 0), border_y - 1)
-            coordinates._replace(x=new_x, y=new_y)
-            self.energy -= 1 * self.aging_factor()'''
