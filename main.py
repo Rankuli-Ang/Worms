@@ -5,7 +5,7 @@ from enum import Enum
 import cv2
 import numpy as np
 
-from worm import Worm, Food
+from worm import Worm, Food, create_genome
 
 
 class Neighbors(Enum):
@@ -37,7 +37,10 @@ class World:
 
     def populate_world(self, worms_num: int = 250):
         for i in range(worms_num):
+            genotype = create_genome()
             worm = Worm(random.randrange(0, self.width), random.randrange(0, self.height))
+            worm.genotype = genotype
+            worm.genetical_boost()
             self.worms.append(worm)
 
     def sow_food(self, food_num: int = 1000):
@@ -268,7 +271,7 @@ class CorpseGrindingProcessor(WorldProcessor):
                 if eater.dead:
                     continue
                 eater.health += worm.level + worm.damage + worm.initiative
-                eater.energy += (worm.level + worm.damage + worm.initiative) * 5
+                eater.energy += (worm.level + worm.damage + worm.initiative) * 10
 
 
 class DeadWormsRemover(WorldProcessor):
@@ -288,7 +291,9 @@ class WormDivision(WorldProcessor):
         for parent in world.worms:
             if parent.divisions_limit > 0:
                 child = Worm(parent.x, parent.y)
+                child.genotype = parent.genotype
                 child.family_affinity = parent.family_affinity + 0.00000000000001
+                child.genetical_boost()
                 world.worms.append(child)
                 parent.divisions_limit -= 1
                 child.generation = parent.generation + 1
