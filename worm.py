@@ -1,5 +1,17 @@
 import random
-from collections import namedtuple
+from enum import Enum
+
+'''from collections import namedtuple'''
+
+
+class Genes(Enum):
+    HEALTHY = 3
+    DAMAGING = 2
+    ENERGETIC = 20
+    DIVISIBLE = 1
+
+
+genes_variations = [Genes.HEALTHY, Genes.DAMAGING, Genes.ENERGETIC, Genes.DIVISIBLE]
 
 
 def read_names(filename):
@@ -11,12 +23,12 @@ def read_names(filename):
 
 
 worms_names = read_names("Names.txt")
-cell = namedtuple('Cell', ['x', 'y'])
+'''cell = namedtuple('Cell', ['x', 'y'])'''
 
 
 class Role:
     def __init__(self, x, y):
-        self.coordinates = cell(x, y)
+        """self.coordinates = cell(x, y)"""
         self.x: int = x
         self.y: int = y
 
@@ -36,17 +48,28 @@ class Worm(Role):
         super().__init__(x, y)
         self.name: str = random.choice(worms_names)
         self.health: int = random.randint(6, 9)
-        self.energy: int = 100
         self.damage: int = random.randint(1, 3)
         self.defense: float = random.uniform(0.8, 0.95)
         self.initiative: int = random.randint(1, 3)
+        self.energy: int = 100
         self.level: int = 1
         self.experience: int = 0
         self.poisoned: int = 0
-        self.genotype: float = random.random()
+        self.family_affinity: float = random.random()
+        self.divisions_limit: int = 0
         self.generation: int = 0
         self.divisions_limit: int = 0
         self.age: int = 0
+        'genetics'
+        self.genotype: list = []
+        self.creating_genome()
+        print(self.genotype)
+
+    def creating_genome(self):
+        genes_for_add = 12
+        while genes_for_add > 0:
+            self.genotype.append(random.choice(genes_variations))
+            genes_for_add -= 1
 
     def describe(self) -> None:
         print(f'Worm {self.name}:')
@@ -58,7 +81,7 @@ class Worm(Role):
         print(f'\tlevel {self.level}')
         print(f'\texperience {self.experience}')
         print(f'\tpoisoned {self.poisoned}')
-        print(f'\tgenotype {self.genotype}')
+        print(f'\tgenotype {self.family_affinity}')
         print(f'\tgeneration {self.generation}')
         print(f'\tdivisions_number {self.divisions_limit}')
 
@@ -118,7 +141,7 @@ class Worm(Role):
         target.poisoned += random.randint(1, 3)
 
     def is_relative_to(self, other) -> bool:
-        return abs(self.genotype - other.genotype) < 1e-12
+        return abs(self.family_affinity - other.family_affinity) < 1e-12
 
     def is_dangerous(self, other_value: int) -> bool:
         return other_value > self.health
@@ -170,11 +193,9 @@ class Worm(Role):
             self.x = min(max(self.x, 0), border_x - 1)
             self.energy -= 1 * self.aging_factor()
 
-    def moving(self, step: tuple, border_x: int, border_y: int):
+    '''def moving(self, step: tuple, coordinates: cell, border_x: int, border_y: int) -> None:
         if not self.dead and self.energy > 0:
-            print('b', self.coordinates)
-            new_x = min(max(step[0] + self.coordinates[0], 0), border_x - 1)
-            new_y = min(max(step[1] + self.coordinates[1], 0), border_y - 1)
-            self.coordinates._replace(x=new_x, y=new_y)
-            self.energy -= 1 * self.aging_factor()
-            print('a', self.coordinates)
+            new_x = min(max(step[0] + coordinates[0], 0), border_x - 1)
+            new_y = min(max(step[1] + coordinates[1], 0), border_y - 1)
+            coordinates._replace(x=new_x, y=new_y)
+            self.energy -= 1 * self.aging_factor()'''
