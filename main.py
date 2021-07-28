@@ -56,26 +56,41 @@ class World:
         return [food_unit for food_unit in self.food if food_unit.x == x and food_unit.y == y]
 
     def max_danger_here(self, x: int, y: int) -> int:
-        max_danger = 0
         worms_at_location = world.worms_at(x, y)
         if len(worms_at_location) > 0:
             return max([worm.health for worm in world.worms_at(x, y)])
         else:
             return 0
 
-    def get_max_danger_neighbours(self, x: int, y: int) -> dict:
+    def get_max_danger_neighbours(self, x: int, y: int, border_x: int, border_y: int) -> dict:
         max_danger_neighbours = {Neighbors.UP: world.max_danger_here(x, y - 1),
                                  Neighbors.RIGHT: world.max_danger_here(x + 1, y),
                                  Neighbors.DOWN: world.max_danger_here(x, y + 1),
                                  Neighbors.LEFT: world.max_danger_here(x - 1, y)}
+        if y == 0:
+            max_danger_neighbours.pop(Neighbors.UP)
+        if y == border_y:
+            max_danger_neighbours.pop(Neighbors.DOWN)
+        if x == 0:
+            max_danger_neighbours.pop(Neighbors.LEFT)
+        if x == border_x:
+            max_danger_neighbours.pop(Neighbors.RIGHT)
         return max_danger_neighbours
 
-    def get_neighbours_with_food(self, x: int, y: int) -> list:
+    def get_neighbours_with_food(self, x: int, y: int, border_x: int, border_y: int) -> list:
         neighbours_with_food = []
         neighbours = {Neighbors.UP: world.food_at(x, y - 1),
                       Neighbors.RIGHT: world.food_at(x + 1, y),
                       Neighbors.DOWN: world.food_at(x, y + 1),
                       Neighbors.LEFT: world.food_at(x - 1, y)}
+        if y == 0:
+            neighbours.pop(Neighbors.UP)
+        if y == border_y:
+            neighbours.pop(Neighbors.DOWN)
+        if x == 0:
+            neighbours.pop(Neighbors.LEFT)
+        if x == border_x:
+            neighbours.pop(Neighbors.RIGHT)
         for neighbour in neighbours:
             location = neighbours.setdefault(neighbour)
             if len(location) != 0:
@@ -100,11 +115,9 @@ class Visualizer(WorldProcessor):
         worm_color = [Colors.WHITE, Colors.BLUE, Colors.GREEN, Colors.YELLOW]
         for worm in world.worms:
             if worm.generation < 4:
-                vis[worm.coordinates[1], worm.coordinates[0]] = worm_color[worm.generation].value
-                '''vis[worm.y, worm.x] = worm_color[worm.generation].value'''
+                vis[worm.y, worm.x] = worm_color[worm.generation].value
             else:
-                '''vis[worm.y, worm.x] = Colors.WHITE.value'''
-                vis[worm.coordinates[1], worm.coordinates[0]] = Colors.WHITE.value
+                vis[worm.y, worm.x] = Colors.WHITE.value
 
         for food_unit in world.food:
             vis[food_unit.y, food_unit.x] = Colors.FOOD.value
@@ -161,27 +174,25 @@ class MovementProcessor(WorldProcessor):
                 if len(targets) > 0:
                     continue
                 else:
-                    max_danger_neighbours = world.get_max_danger_neighbours(worm.x, worm.y)
+                    max_danger_neighbours = world.get_max_danger_neighbours(worm.x, worm.y, world.width, world.height)
                     safe_steps = worm.get_safe_steps(max_danger_neighbours)
                     if len(safe_steps) > 0:
-                        steps_with_food = world.get_neighbours_with_food(worm.x, worm.y)
+                        steps_with_food = world.get_neighbours_with_food(worm.x, worm.y, world.width, world.height)
                         dcoord = random.choice(worm.get_best_steps(safe_steps, steps_with_food))
-                        worm.moving(dcoord, world.width, world.height)
-                        '''worm.move(dcoord[0], dcoord[1], world.width, world.height)'''
+                        worm.move(dcoord[0], dcoord[1], world.width, world.height)
             else:
                 danger = world.max_danger_here(worm.x, worm.y)
                 if not worm.is_dangerous(danger):
                     continue
                 else:
-                    max_danger_neighbours = world.get_max_danger_neighbours(worm.x, worm.y)
+                    max_danger_neighbours = world.get_max_danger_neighbours(worm.x, worm.y, world.width, world.height)
                     safe_steps = worm.get_safe_steps(max_danger_neighbours)
                     if len(safe_steps) == 0:
                         continue
                     else:
-                        steps_with_food = world.get_neighbours_with_food(worm.x, worm.y)
+                        steps_with_food = world.get_neighbours_with_food(worm.x, worm.y, world.width, world.height)
                         dcoord = random.choice(worm.get_best_steps(safe_steps, steps_with_food))
-                        worm.moving(dcoord, world.width, world.height)
-                        '''worm.move(dcoord[0], dcoord[1], world.width, world.height)'''
+                        worm.move(dcoord[0], dcoord[1], world.width, world.height)
 
 
 class PoisonProcessor(WorldProcessor):
@@ -277,7 +288,7 @@ class WormDivision(WorldProcessor):
         for parent in world.worms:
             if parent.divisions_limit > 0:
                 child = Worm(parent.x, parent.y)
-                child.genotype = parent.genotype + 0.00000000000001
+                child.family_affinity = parent.family_affinity + 0.00000000000001
                 world.worms.append(child)
                 parent.divisions_limit -= 1
                 child.generation = parent.generation + 1
