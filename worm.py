@@ -15,6 +15,13 @@ genes_variations = [Genes.HEALTH, Genes.DAMAGE, Genes.ENERGY, Genes.DEFENSE]
 cell = namedtuple('Cell', ['x', 'y'])
 
 
+class Neighbors(Enum):
+    UP = (0, -1)
+    RIGHT = (1, 0)
+    DOWN = (0, 1)
+    LEFT = (-1, 0)
+
+
 def create_genome():
     genotype = []
     genes_for_add = 12
@@ -152,13 +159,13 @@ class Worm(Role):
 
     def insertion_mutation(self) -> None:
         inserted_gene = random.choice(genes_variations)
-        self.genotype += inserted_gene
+        self.genotype.append(inserted_gene)
         self.genetical_boost(inserted_gene)
 
     def deletion_mutation(self) -> None:
         deleted_gene = random.choice(self.genotype)
         if len(self.genotype) > 1:
-            self.genotype -= deleted_gene
+            self.genotype.remove(deleted_gene)
             if deleted_gene == Genes.ENERGY:
                 self.energetic_genes_pool -= 1
                 self.energetic_genes_score()
@@ -239,12 +246,17 @@ class Worm(Role):
     def is_dangerous(self, other_value: int) -> bool:
         return other_value > self.health
 
-    def get_safe_steps(self, locations: dict) -> list:
+    def max_danger_at_location(self, worms_here: list):
+        if len(worms_here) > 0:
+            return max([worm.health for worm in worms_here])
+        else:
+            return 0
+
+    def get_safe_steps(self, steps: dict) -> list:
         safe_steps = []
-        for location in locations:
-            max_health_in_location = locations.setdefault(location)
-            if self.is_dangerous(max_health_in_location) is False:
-                safe_steps.append(location.value)
+        for step in steps:
+            if not self.is_dangerous(self.max_danger_at_location(steps.get(step))):
+                safe_steps.append(step.value)
         return safe_steps
 
     def get_best_steps(self, safe_steps: list, steps_with_food: list) -> list:
@@ -276,21 +288,8 @@ class Worm(Role):
                     self.divisions_limit += 1
                     self.energy -= 50
 
-    def move(self, dx: int, dy: int, border_x: int, border_y: int) -> None:
+    def move(self, step: tuple, border_x: int, border_y: int) -> None:
         if not self.dead and self.energy > 0:
-            assert abs(dx) + abs(dy) == 1
-            self.x += dx
-            self.y += dy
-
-            self.y = min(max(self.y, 0), border_y - 1)
-            self.x = min(max(self.x, 0), border_x - 1)
-            self.energy -= 1 * self.aging_factor()
-
-    '''def moving(self, step: tuple, border_x: int, border_y: int):
-        if not self.dead and self.energy > 0:
-            print('b', self.coordinates)
             new_x = min(max(step[0] + self.coordinates.__getattribute__('x'), 0), border_x - 1)
             new_y = min(max(step[1] + self.coordinates.__getattribute__('y'), 0), border_y - 1)
             self.coordinates = cell(new_x, new_y)
-            self.energy -= 1 * self.aging_factor()
-            print('a', self.coordinates)'''
