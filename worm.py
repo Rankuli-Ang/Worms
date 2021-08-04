@@ -42,16 +42,45 @@ def read_names(filename):
 worms_names = read_names("Names.txt")
 
 
+class Genetics:
+    def __init__(self):
+        self.genotype: list = []
+        self.energetic_genes_pool: int = 0
+        self.health_genes_pool: int = 0
+        self.damage_genes_pool: int = 0
+        self.defense_genes_pool: int = 0
+        self.energetic_boost: int = 0
+        self.health_boost: int = 0
+        self.damage_boost: int = 0
+        self.defense_boost: int = 0
+
+    def create_genome(self):
+        genotype = []
+        genes_for_add = 12
+        while genes_for_add > 0:
+            genotype.append(random.choice(genes_variations))
+            genes_for_add -= 1
+        return genotype
+
+    def insertion_mutation(self, inserted_gene: Genes) -> None:
+        self.genotype.append(inserted_gene)
+
+    def deletion_mutation(self, deleted_gene: Genes) -> None:
+        self.genotype.remove(deleted_gene)
+
+    def substitution_mutation(self, deleted_gene: Genes, inserted_gene: Genes) -> None:
+        self.deletion_mutation(deleted_gene)
+        self.insertion_mutation(inserted_gene)
+
+
 class Role:
-    def __init__(self, x, y):
-        self.x: int = x
-        self.y: int = y
-        self.coordinates = cell(x, y)
+    def __init__(self, coordinates: cell):
+        self.coordinates = coordinates
 
 
 class Food(Role):
-    def __init__(self, x, y):
-        super().__init__(x, y)
+    def __init__(self, coordinates: cell):
+        super().__init__(coordinates)
         self.nutritional_value: int = random.randint(1, 5)
 
     @property
@@ -60,8 +89,8 @@ class Food(Role):
 
 
 class Worm(Role):
-    def __init__(self, x, y):
-        super().__init__(x, y)
+    def __init__(self, coordinates: cell):
+        super().__init__(coordinates)
         self.name: str = random.choice(worms_names)
         self.health: int = random.randint(6, 9)
         self.damage: int = random.randint(1, 3)
@@ -76,16 +105,8 @@ class Worm(Role):
         self.generation: int = 0
         self.divisions_limit: int = 0
         self.age: int = 0
-        'genetics'
-        self.genotype: list = []
-        self.energetic_genes_pool: int = 0
-        self.health_genes_pool: int = 0
-        self.damage_genes_pool: int = 0
-        self.defense_genes_pool: int = 0
-        self.energetic_boost: int = 0
-        self.health_boost: int = 0
-        self.damage_boost: int = 0
-        self.defense_boost: int = 0
+
+        self.genetics = Genetics()
 
     def describe(self) -> None:
         print(f'Worm {self.name}:')
@@ -101,89 +122,123 @@ class Worm(Role):
         print(f'\tgeneration {self.generation}')
         print(f'\tdivisions_number {self.divisions_limit}')
 
-    def energetic_genes_score(self) -> None:
-        if self.energetic_genes_pool >= 3:
+    def energetic_genes_realization(self) -> None:
+        while self.genetics.energetic_genes_pool >= 3:
             self.energy += Genes.ENERGY.value
-            self.energetic_genes_pool -= 3
-            self.energetic_boost += 1
-        if self.energetic_genes_pool < 0:
+            self.genetics.energetic_genes_pool -= 3
+            self.genetics.energetic_boost += 1
+        if self.genetics.energetic_genes_pool < 0:
             self.energy -= Genes.ENERGY.value
-            self.energetic_genes_pool += 3
-            self.energetic_boost -= 1
+            self.genetics.energetic_genes_pool += 3
+            self.genetics.energetic_boost -= 1
 
-    def health_genes_score(self) -> None:
-        if self.health_genes_pool >= 4:
+    def health_genes_realization(self) -> None:
+        while self.genetics.health_genes_pool >= 4:
             self.health += Genes.HEALTH.value
-            self.health_genes_pool -= 4
-            self.health_boost += 1
-        if self.health_genes_pool < 0:
+            self.genetics.health_genes_pool -= 4
+            self.genetics.health_boost += 1
+        if self.genetics.health_genes_pool < 0:
             self.health -= Genes.HEALTH.value
-            self.health_genes_pool += 4
-            self.health_boost -= 1
+            self.genetics.health_genes_pool += 4
+            self.genetics.health_boost -= 1
 
-    def damage_genes_score(self) -> None:
-        if self.damage_genes_pool >= 5:
+    def damage_genes_realization(self) -> None:
+        while self.genetics.damage_genes_pool >= 5:
             self.damage += Genes.DAMAGE.value
-            self.damage_genes_pool -= 5
-            self.damage_boost += 1
-        if self.damage_genes_pool < 0:
+            self.genetics.damage_genes_pool -= 5
+            self.genetics.damage_boost += 1
+        if self.genetics.damage_genes_pool < 0:
             self.damage -= Genes.DAMAGE.value
-            self.damage_genes_pool += 5
-            self.damage_boost -= 1
+            self.genetics.damage_genes_pool += 5
+            self.genetics.damage_boost -= 1
 
-    def defense_genes_score(self) -> None:
-        if self.defense_genes_pool >= 5:
+    def defense_genes_realization(self) -> None:
+        while self.genetics.defense_genes_pool >= 5:
             self.defense -= Genes.DEFENSE.value
             if self.defense < 0.2:
                 self.defense = 0.2
-            self.defense_genes_pool -= 5
-            self.defense_boost += 1
-        if self.defense_genes_pool < 0:
+            self.genetics.defense_genes_pool -= 5
+            self.genetics.defense_boost += 1
+        if self.genetics.defense_genes_pool < 0:
             self.defense += Genes.DEFENSE.value
-            self.defense_genes_pool += 5
-            self.defense_boost -= 1
+            self.genetics.defense_genes_pool += 5
+            self.genetics.defense_boost -= 1
 
-    def genetical_boost(self, gene: Genes) -> None:
-        if gene is Genes.ENERGY:
-            self.energetic_genes_pool += 1
-            self.energetic_genes_score()
-        if gene is Genes.HEALTH:
-            self.health_genes_pool += 1
-            self.health_genes_score()
-        if gene is Genes.DAMAGE:
-            self.damage_genes_pool += 1
-            self.damage_genes_score()
-        if gene is Genes.DEFENSE:
-            self.defense_genes_pool += 1
-            self.defense_genes_score()
+    def newborn_genetics_boost(self, genotype: list) -> None:
+        for gene in genotype:
+            if gene is Genes.ENERGY:
+                self.genetics.energetic_genes_pool += 1
+                continue
+            if gene is Genes.HEALTH:
+                self.genetics.health_genes_pool += 1
+                continue
+            if gene is Genes.DAMAGE:
+                self.genetics.damage_genes_pool += 1
+                continue
+            if gene is Genes.DEFENSE:
+                self.genetics.defense_genes_pool += 1
+                continue
+
+        self.energetic_genes_realization()
+        self.health_genes_realization()
+        self.damage_genes_realization()
+        self.defense_genes_realization()
 
     def insertion_mutation(self) -> None:
         inserted_gene = random.choice(genes_variations)
-        self.genotype.append(inserted_gene)
-        self.genetical_boost(inserted_gene)
+        self.genetics.insertion_mutation(inserted_gene)
+        if inserted_gene is Genes.ENERGY:
+            self.genetics.energetic_genes_pool += 1
+            self.energetic_genes_realization()
+            return None
+        if inserted_gene is Genes.HEALTH:
+            self.genetics.health_genes_pool += 1
+            self.health_genes_realization()
+            return None
+        if inserted_gene is Genes.DAMAGE:
+            self.genetics.damage_genes_pool += 1
+            self.damage_genes_realization()
+            return None
+        if inserted_gene is Genes.DEFENSE:
+            self.genetics.defense_genes_pool += 1
+            self.defense_genes_realization()
 
     def deletion_mutation(self) -> None:
-        deleted_gene = random.choice(self.genotype)
-        if len(self.genotype) > 1:
-            self.genotype.remove(deleted_gene)
-            if deleted_gene == Genes.ENERGY:
-                self.energetic_genes_pool -= 1
-                self.energetic_genes_score()
-            if deleted_gene == Genes.HEALTH:
-                self.health_genes_pool -= 1
-                self.health_genes_score()
-            if deleted_gene == Genes.DAMAGE:
-                self.damage_genes_pool -= 1
-                self.damage_genes_score()
-            if deleted_gene == Genes.DEFENSE:
-                self.defense_genes_pool -= 1
-                self.defense_genes_score()
-        else:
+        deleted_gene = random.choice(self.genetics.genotype)
+        if len(self.genetics.genotype) <= 1:
             self.health = 0
+            return None
+        else:
+            self.genetics.deletion_mutation(deleted_gene)
+            if deleted_gene == Genes.ENERGY:
+                self.genetics.energetic_genes_pool -= 1
+                self.energetic_genes_realization()
+                return None
+            if deleted_gene == Genes.HEALTH:
+                self.genetics.health_genes_pool -= 1
+                self.health_genes_realization()
+                return None
+            if deleted_gene == Genes.DAMAGE:
+                self.genetics.damage_genes_pool -= 1
+                self.damage_genes_realization()
+                return None
+            if deleted_gene == Genes.DEFENSE:
+                self.genetics.defense_genes_pool -= 1
+                self.defense_genes_realization()
 
     def substitution_mutation(self) -> None:
         self.deletion_mutation()
         self.insertion_mutation()
+
+    def mutation_metamorphosis(self, mutation: str) -> None:
+        if mutation == 'substitution_mutation':
+            self.substitution_mutation()
+            return None
+        elif mutation == 'insertion_mutation':
+            self.insertion_mutation()
+            return None
+        elif mutation == 'deletion_mutation':
+            self.deletion_mutation()
 
     def level_up(self) -> None:
         if self.dead:
