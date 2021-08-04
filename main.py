@@ -32,9 +32,8 @@ class World:
         for i in range(worms_num):
             genotype = create_genome()
             worm = Worm(cell(random.randrange(0, self.width), random.randrange(0, self.height)))
-            worm.genotype = genotype
-            for gene in worm.genotype:
-                worm.genetical_boost(gene)
+            worm.genetics.genotype = genotype
+            worm.newborn_genetics_boost(worm.genetics.genotype)
             self.worms.append(worm)
 
     def sow_food(self, food_num: int = 1000) -> None:
@@ -104,14 +103,14 @@ class World:
         genotype_owners = self.worms_at(location_cell)
         most_long_genotype = 0
         for genotype_owner in genotype_owners:
-            if len(genotype_owner.genotype) > most_long_genotype:
-                most_long_genotype = len(genotype_owner.genotype)
+            if len(genotype_owner.genetics.genotype) > most_long_genotype:
+                most_long_genotype = len(genotype_owner.genetics.genotype)
         return most_long_genotype
 
     def crossover(self, location_cell: cell) -> list:
         worms_at_location = self.worms_at(location_cell)
         if len(worms_at_location) == 1:
-            return worms_at_location[0].genotype
+            return worms_at_location[0].genetics.genotype
         else:
             families = []
             parents = []
@@ -129,7 +128,7 @@ class World:
                         families.append(worm.family_affinity)
                         parents.append(worm)
             if len(parents) == 1:
-                return parents[0].genotype
+                return parents[0].genetics.genotype
             else:
                 new_genotype = []
                 new_genotype_length = self.most_long_genotype_at_location(location_cell)
@@ -138,7 +137,7 @@ class World:
                     if len(parents) > 0:
                         for parent in parents:
                             try:
-                                new_genotype.append(parent.genotype[gene_counter])
+                                new_genotype.append(parent.genetics.genotype[gene_counter])
 
                             except IndexError:
                                 parents.remove(parent)
@@ -333,10 +332,9 @@ class WormDivision(WorldProcessor):
         for parent in world_object.worms:
             if parent.divisions_limit > 0:
                 child = Worm(parent.coordinates)
-                child.genotype = world_object.crossover(parent.coordinates)
+                child.genetics.genotype = world_object.crossover(parent.coordinates)
                 child.family_affinity = parent.family_affinity + 0.00000000000001
-                for gene in child.genotype:
-                    child.genetical_boost(gene)
+                child.newborn_genetics_boost(child.genetics.genotype)
                 world_object.worms.append(child)
                 parent.divisions_limit -= 1
                 child.generation = parent.generation + 1
@@ -349,12 +347,18 @@ class MutationProcessor(WorldProcessor):
     def process(self, world_object: World) -> None:
         for worm in world_object.worms:
             mutation_saving_throw = random.randint(1, 100)
+            happened_mutation = []
             if mutation_saving_throw == 1:
-                worm.substitution_mutation()
+                happened_mutation.append('substitution_mutation')
             elif 1 < mutation_saving_throw < 4:
-                worm.insertion_mutation()
+                happened_mutation.append('insertion_mutation')
             elif 3 < mutation_saving_throw < 6:
-                worm.deletion_mutation()
+                happened_mutation.append('deletion_mutation')
+
+            if len(happened_mutation) == 0:
+                continue
+            else:
+                worm.mutation_metamorphosis(happened_mutation[0])
 
 
 class TestAnalyticsProcessor(WorldProcessor):
