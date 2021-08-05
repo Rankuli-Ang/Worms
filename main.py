@@ -43,7 +43,7 @@ class World:
 
     @property
     def worms_by_initiative(self) -> List[Worm]:
-        return sorted(world.worms, key=lambda worm: worm.initiative)
+        return sorted(world.worms, key=lambda worm: worm.get_initiative())
 
     def worms_at(self, location_cell: cell) -> List[Worm]:
         return [worm for worm in self.worms if
@@ -107,45 +107,47 @@ class World:
                 most_long_genotype = len(genotype_owner.genetics.genotype)
         return most_long_genotype
 
-    def crossover(self, location_cell: cell) -> list:
+    def worms_is_not_relatives(self, location_cell: cell) -> list:
         worms_at_location = self.worms_at(location_cell)
         if len(worms_at_location) == 1:
-            return worms_at_location[0].genetics.genotype
-        else:
-            families = []
-            parents = []
-            for worm in worms_at_location:
-                if len(families) == 0:
-                    families.append(worm.family_affinity)
-                    parents.append(worm)
-                else:
-                    overlap = False
-                    for family in families:
-                        if abs(worm.family_affinity - family) < 1e-12:
-                            overlap = True
-                            break
-                    if overlap is False:
-                        families.append(worm.family_affinity)
-                        parents.append(worm)
-            if len(parents) == 1:
-                return parents[0].genetics.genotype
-            else:
-                new_genotype = []
-                new_genotype_length = self.most_long_genotype_at_location(location_cell)
-                gene_counter = 0
-                while gene_counter <= new_genotype_length:
-                    if len(parents) > 0:
-                        for parent in parents:
-                            try:
-                                new_genotype.append(parent.genetics.genotype[gene_counter])
+            return worms_at_location
+        families = []
+        worms_is_not_relatives = []
+        for worm in worms_at_location:
+            if len(families) == 0:
+                families.append(worm.genetics.family_affinity)
+                worms_is_not_relatives.append(worm)
+                continue
+            overlap = False
+            for family in families:
+                if abs(worm.genetics.family_affinity - family) < 1e-12:
+                    overlap = True
+                    break
+            if overlap is False:
+                families.append(worm.genetics.family_affinity)
+                worms_is_not_relatives.append(worm)
+            return worms_is_not_relatives
 
-                            except IndexError:
-                                parents.remove(parent)
-                                gene_counter -= 1
-                            gene_counter += 1
-                    else:
-                        break
-                return new_genotype
+    def genetic_variability(self, location_cell: cell) -> list:
+        parents = self.worms_is_not_relatives(location_cell)
+        if len(parents) == 1:
+            return parents[0].genetics.genotype
+        new_genotype = []
+        new_genotype_length = self.most_long_genotype_at_location(location_cell)
+        gene_counter = 0
+        while gene_counter <= new_genotype_length:
+            if len(parents) > 0:
+                for parent in parents:
+                    try:
+                        new_genotype.append(parent.genetics.genotype[gene_counter])
+
+                    except IndexError:
+                        parents.remove(parent)
+                        gene_counter -= 1
+                    gene_counter += 1
+            else:
+                break
+        return new_genotype
 
 
 class WorldProcessor:
@@ -164,9 +166,9 @@ class Visualizer(WorldProcessor):
         vis = np.zeros((world_object.height, world_object.width, 3), dtype='uint8')
         worm_color = [Colors.WHITE, Colors.BLUE, Colors.GREEN, Colors.YELLOW]
         for worm in world_object.worms:
-            if worm.generation < 4:
+            if worm.get_generation() < 4:
                 vis[worm.coordinates.__getattribute__('y'), worm.coordinates.__getattribute__('x')] \
-                    = worm_color[worm.generation].value
+                    = worm_color[worm.get_generation()].value
             else:
                 vis[worm.coordinates.__getattribute__('y'), worm.coordinates.__getattribute__('x')] = Colors.WHITE.value
 
@@ -207,7 +209,7 @@ class ZeroEnergyProcessor(WorldProcessor):
 
     def process(self, world_object: World) -> None:
         for worm in world_object.worms_by_initiative:
-            if worm.energy <= 0:
+            if worm.get_energy() <= 0:
                 worm.health -= 0.1
 
 
@@ -245,7 +247,7 @@ class PoisonProcessor(WorldProcessor):
 
     def process(self, world_object: World) -> None:
         for worm in world_object.worms_by_initiative:
-            if worm.poisoned > 0:
+            if worm.get_poisoned() > 0:
                 worm.health -= 1
                 worm.poisoned -= 1
 
@@ -311,17 +313,22 @@ class CorpseGrindingProcessor(WorldProcessor):
             for eater in eaters:
                 if eater.dead:
                     continue
-                eater.health += worm.level + worm.damage + worm.initiative
-                eater.energy += (worm.level + worm.damage + worm.initiative) * 10
+                eater.health += worm.get_level() + worm.get_damage() + worm.get_initiative()
+                eater.energy += (worm.get_level() + worm.get_damage() + worm.get_initiative()) * 10
 
 
 class DeadWormsRemover(WorldProcessor):
     def __init__(self):
         super(DeadWormsRemover, self).__init__()
+        self.dead_worms = 0
 
     def process(self, world_object: World) -> None:
+        number_of_worms_before = len(world_object.worms)
         alive_worms = [worm for worm in world_object.worms if not worm.dead]
         world_object.worms = alive_worms
+        dead_worms_in_round = number_of_worms_before - len(world_object.worms)
+        self.dead_worms += dead_worms_in_round
+        print('dead', self.dead_worms)
 
 
 class WormDivision(WorldProcessor):
@@ -330,14 +337,15 @@ class WormDivision(WorldProcessor):
 
     def process(self, world_object: World) -> None:
         for parent in world_object.worms:
-            if parent.divisions_limit > 0:
-                child = Worm(parent.coordinates)
-                child.genetics.genotype = world_object.crossover(parent.coordinates)
-                child.family_affinity = parent.family_affinity + 0.00000000000001
-                child.newborn_genetics_boost(child.genetics.genotype)
-                world_object.worms.append(child)
-                parent.divisions_limit -= 1
-                child.generation = parent.generation + 1
+            if parent.get_divisions_limit() == 0:
+                continue
+            child = Worm(parent.coordinates)
+            child.genetics.genotype = world_object.genetic_variability(parent.coordinates)
+            child.family_affinity = parent.genetics.family_affinity + 0.00000000000001
+            child.newborn_genetics_boost(child.genetics.genotype)
+            world_object.worms.append(child)
+            parent.divisions_limit -= 1
+            child._generation = parent.get_generation() + 1
 
 
 class MutationProcessor(WorldProcessor):
@@ -361,9 +369,9 @@ class MutationProcessor(WorldProcessor):
                 worm.mutation_metamorphosis(happened_mutation[0])
 
 
-class TestAnalyticsProcessor(WorldProcessor):
+class AnalyticsProcessor(WorldProcessor):
     def __init__(self):
-        super(TestAnalyticsProcessor, self).__init__()
+        super(AnalyticsProcessor, self).__init__()
         self.iterations = 0
 
     def process(self, world_object: World) -> None:
@@ -379,7 +387,7 @@ if __name__ == "__main__":
                   CorpseGrindingProcessor(), DeadWormsRemover(),
                   FoodPickUpProcessor(), EatenFoodRemover(), AddFoodProcessor(),
                   LevelUpProcessor(), WormDivision(), MutationProcessor(),
-                  TestAnalyticsProcessor(), Visualizer()]
+                  AnalyticsProcessor(), Visualizer()]
 
     while True:
         for proc in processors:
