@@ -1,6 +1,8 @@
 import random
 from enum import Enum
-from collections import namedtuple
+from operator import add
+
+from common_types import Cell
 
 
 class Genes(Enum):
@@ -11,15 +13,6 @@ class Genes(Enum):
 
 
 genes_variations = [Genes.HEALTH, Genes.DAMAGE, Genes.ENERGY, Genes.DEFENSE]
-
-cell = namedtuple('Cell', ['x', 'y'])
-
-
-class Neighbors(Enum):
-    UP = (0, -1)
-    RIGHT = (1, 0)
-    DOWN = (0, 1)
-    LEFT = (-1, 0)
 
 
 def create_genome():
@@ -75,12 +68,12 @@ class Genetics:
 
 
 class Role:
-    def __init__(self, coordinates: cell):
+    def __init__(self, coordinates: tuple):
         self.coordinates = coordinates
 
 
 class Food(Role):
-    def __init__(self, coordinates: cell):
+    def __init__(self, coordinates: tuple):
         super().__init__(coordinates)
         self.nutritional_value: int = random.randint(1, 5)
 
@@ -90,7 +83,7 @@ class Food(Role):
 
 
 class Worm(Role):
-    def __init__(self, coordinates: cell):
+    def __init__(self, coordinates: tuple):
         super().__init__(coordinates)
         self._name: str = random.choice(worms_names)
         self._health: int = random.randint(6, 9)
@@ -402,6 +395,7 @@ class Worm(Role):
 
     def move(self, step: tuple, border_x: int, border_y: int) -> None:
         if not self.dead and self._energy > 0:
-            new_x = min(max(step[0] + self.coordinates.__getattribute__('x'), 0), border_x - 1)
-            new_y = min(max(step[1] + self.coordinates.__getattribute__('y'), 0), border_y - 1)
-            self.coordinates = cell(new_x, new_y)
+            new_coordinates = tuple(map(add, step, self.coordinates))
+            new_x = min(max(new_coordinates[0], 0), border_x - 1)
+            new_y = min(max(new_coordinates[1], 0), border_y - 1)
+            self.coordinates = Cell(new_x, new_y)
