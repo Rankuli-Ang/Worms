@@ -1,20 +1,12 @@
 import random
 from typing import List
-from enum import Enum
+from operator import add
+from common_types import Colors, Cell, Neighbors
 
 import cv2
 import numpy as np
 
-from worm import Worm, Food, create_genome, cell, Neighbors
-
-
-class Colors(Enum):
-    SPACE = (0, 0, 0)
-    FOOD = (0, 0, 255)
-    WHITE = (255, 255, 255)
-    BLUE = (255, 0, 0)
-    GREEN = (0, 255, 0)
-    YELLOW = (0, 255, 255)
+from worm import Worm, Food, create_genome
 
 
 class World:
@@ -30,84 +22,72 @@ class World:
 
     def populate_world(self, worms_num: int = 250) -> None:
         for i in range(worms_num):
-            genotype = create_genome()
-            worm = Worm(cell(random.randrange(0, self.width), random.randrange(0, self.height)))
-            worm.genetics.genotype = genotype
+            worm = Worm(Cell(random.randrange(0, self.width), random.randrange(0, self.height)))
+            worm.genetics.genotype = create_genome()
             worm.newborn_genetics_boost(worm.genetics.genotype)
             self.worms.append(worm)
 
     def sow_food(self, food_num: int = 1000) -> None:
         for i in range(food_num):
-            food_unit = Food(cell(random.randrange(0, self.width), random.randrange(0, self.height)))
+            food_unit = Food(Cell(random.randrange(0, self.width), random.randrange(0, self.height)))
             self.food.append(food_unit)
 
     @property
     def worms_by_initiative(self) -> List[Worm]:
         return sorted(world.worms, key=lambda worm: worm.get_initiative())
 
-    def worms_at(self, location_cell: cell) -> List[Worm]:
+    def worms_at(self, location_cell: tuple) -> List[Worm]:
         return [worm for worm in self.worms if
                 worm.coordinates == location_cell]
 
-    def food_at(self, location_cell: cell) -> List[Food]:
+    def food_at(self, location_cell: tuple) -> List[Food]:
         return [food_unit for food_unit in self.food
                 if food_unit.coordinates == location_cell]
 
-    def get_neighbours_worms(self, location_cell: cell, border_x: int, border_y: int) -> dict:
+    def get_neighbours_worms(self, location_cell: tuple, border_x: int, border_y: int) -> dict:
         neighbours_worms = {}
 
         if location_cell.__getattribute__('y') > 0:
-            up = {Neighbors.UP: world.worms_at(cell(location_cell.__getattribute__('x'),
-                                                    (location_cell.__getattribute__('y') - 1)))}
+            up = {Neighbors.UP: world.worms_at(tuple(map(add, location_cell, Neighbors.UP.value)))}
             neighbours_worms.update(up)
         if location_cell.__getattribute__('y') < border_y:
-            down = {Neighbors.DOWN: world.worms_at(cell(location_cell.__getattribute__('x'),
-                                                        (location_cell.__getattribute__('y') + 1)))}
+            down = {Neighbors.DOWN: world.worms_at(tuple(map(add, location_cell, Neighbors.DOWN.value)))}
             neighbours_worms.update(down)
         if location_cell.__getattribute__('x') > 0:
-            left = {Neighbors.LEFT: world.worms_at(cell((location_cell.__getattribute__('x') - 1),
-                                                        location_cell.__getattribute__('y')))}
+            left = {Neighbors.LEFT: world.worms_at(tuple(map(add, location_cell, Neighbors.LEFT.value)))}
             neighbours_worms.update(left)
         if location_cell.__getattribute__('x') < border_x:
-            right = {Neighbors.RIGHT: world.worms_at(cell((location_cell.__getattribute__('x') + 1),
-                                                          location_cell.__getattribute__('y')))}
+            right = {Neighbors.RIGHT: world.worms_at(tuple(map(add, location_cell, Neighbors.RIGHT.value)))}
             neighbours_worms.update(right)
         return neighbours_worms
 
-    def get_neighbours_food(self, location_cell: cell, border_x: int, border_y: int) -> list:
+    def get_neighbours_food(self, location_cell: tuple, border_x: int, border_y: int) -> list:
         neighbours_food = []
 
         if location_cell.__getattribute__('y') > 0:
-            up = {Neighbors.UP: world.food_at(cell(location_cell.__getattribute__('x'),
-                                                   (location_cell.__getattribute__('y') - 1)))}
+            up = {Neighbors.UP: world.food_at(tuple(map(add, location_cell, Neighbors.UP.value)))}
             if len(up.get(Neighbors.UP)) > 0:
                 neighbours_food.append(Neighbors.UP.value)
         if location_cell.__getattribute__('y') < border_y:
-            down = {Neighbors.DOWN: world.food_at(cell(location_cell.__getattribute__('x'),
-                                                       (location_cell.__getattribute__('y') + 1)))}
+            down = {Neighbors.DOWN: world.food_at(tuple(map(add, location_cell, Neighbors.DOWN.value)))}
             if len(down.get(Neighbors.DOWN)) > 0:
                 neighbours_food.append(Neighbors.DOWN.value)
         if location_cell.__getattribute__('x') > 0:
-            left = {Neighbors.LEFT: world.food_at(cell((location_cell.__getattribute__('x') - 1),
-                                                       location_cell.__getattribute__('y')))}
+            left = {Neighbors.LEFT: world.food_at(tuple(map(add, location_cell, Neighbors.LEFT.value)))}
             if len(left.get(Neighbors.LEFT)) > 0:
                 neighbours_food.append(Neighbors.LEFT.value)
         if location_cell.__getattribute__('x') < border_x:
-            right = {Neighbors.RIGHT: world.food_at(cell((location_cell.__getattribute__('x') + 1),
-                                                         location_cell.__getattribute__('y')))}
+            right = {Neighbors.RIGHT: world.food_at(tuple(map(add, location_cell, Neighbors.RIGHT.value)))}
             if len(right.get(Neighbors.RIGHT)) > 0:
                 neighbours_food.append(Neighbors.RIGHT.value)
         return neighbours_food
 
-    def most_long_genotype_at_location(self, location_cell: cell) -> int:
+    def get_the_longest_genotype_at(self, location_cell: tuple) -> int:
         genotype_owners = self.worms_at(location_cell)
-        most_long_genotype = 0
-        for genotype_owner in genotype_owners:
-            if len(genotype_owner.genetics.genotype) > most_long_genotype:
-                most_long_genotype = len(genotype_owner.genetics.genotype)
-        return most_long_genotype
+        lengths = [len(creature.genetics.genotype) for creature in genotype_owners]
+        return max(lengths, default=0)
 
-    def worms_is_not_relatives(self, location_cell: cell) -> list:
+    def worms_is_not_relatives(self, location_cell: tuple) -> list:
         worms_at_location = self.worms_at(location_cell)
         if len(worms_at_location) == 1:
             return worms_at_location
@@ -128,12 +108,12 @@ class World:
                 worms_is_not_relatives.append(worm)
             return worms_is_not_relatives
 
-    def genetic_variability(self, location_cell: cell) -> list:
+    def genetic_variability(self, location_cell: tuple) -> list:
         parents = self.worms_is_not_relatives(location_cell)
         if len(parents) == 1:
             return parents[0].genetics.genotype
         new_genotype = []
-        new_genotype_length = self.most_long_genotype_at_location(location_cell)
+        new_genotype_length = self.get_the_longest_genotype_at(location_cell)
         gene_counter = 0
         while gene_counter <= new_genotype_length:
             if len(parents) > 0:
@@ -190,7 +170,7 @@ class AddFoodProcessor(WorldProcessor):
     def process(self, world_object: World) -> None:
         growth = random.randint(10, 20)
         for i in range(growth):
-            food_unit = Food(cell(random.randrange(0, world_object.width), random.randrange(0, world_object.height)))
+            food_unit = Food(Cell(random.randrange(0, world_object.width), random.randrange(0, world_object.height)))
             world_object.food.append(food_unit)
 
 
