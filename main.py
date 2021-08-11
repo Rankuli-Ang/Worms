@@ -2,6 +2,7 @@ import random
 from typing import List
 from operator import add
 from common_types import Colors, Cell, Neighbors
+from weather import Rain
 
 import cv2
 import numpy as np
@@ -13,6 +14,7 @@ class World:
     def __init__(self, height: int = 100, width: int = 100, worms_num: int = 250, food_num: int = 1000):
         self.worms: List[Worm] = []
         self.food: List[Food] = []
+        self.rains: List[Rain] = []
         self.name: str = 'World'
         self.height = height
         self.width = width
@@ -31,6 +33,13 @@ class World:
         for i in range(food_num):
             food_unit = Food(Cell(random.randrange(0, self.width), random.randrange(0, self.height)))
             self.food.append(food_unit)
+
+    def rain_emergence(self) -> None:
+        if len(self.rains) < 3:
+            chance_throw = random.randrange(0, 10)
+            if chance_throw >= 8:
+                rain = Rain(Cell(random.randrange(0, self.width), random.randrange(0, self.height)))
+                self.rains.append(rain)
 
     @property
     def worms_by_initiative(self) -> List[Worm]:
@@ -145,6 +154,10 @@ class Visualizer(WorldProcessor):
     def process(self, world_object: World) -> None:
         vis = np.zeros((world_object.height, world_object.width, 3), dtype='uint8')
         worm_color = [Colors.WHITE, Colors.BLUE, Colors.GREEN, Colors.YELLOW]
+        for rain in world_object.rains:
+            for coordinate in rain.all_coordinates:
+                vis[coordinate.__getattribute__('y'), coordinate.__getattribute__('x')] \
+                    = Colors.SKY_BLUE.value
         for worm in world_object.worms:
             if worm.get_generation() < 4:
                 vis[worm.coordinates.__getattribute__('y'), worm.coordinates.__getattribute__('x')] \
@@ -349,6 +362,38 @@ class MutationProcessor(WorldProcessor):
                 worm.mutation_metamorphosis(happened_mutation[0])
 
 
+class WeatherEventsEmergenceProcessor(WorldProcessor):
+    def __init__(self):
+        super(WeatherEventsEmergenceProcessor, self).__init__()
+
+    def process(self, world_object: World) -> None:
+        world_object.rain_emergence()
+
+
+class WeatherMovementsProcessor(WorldProcessor):
+    def __init__(self):
+        super(WeatherMovementsProcessor, self).__init__()
+
+    def process(self, world_object: World) -> None:
+        if len(world_object.rains) > 0:
+            for rain in world_object.rains:
+                rain.move(world_object.width, world_object.height)
+                rain.upscaling(world_object.width, world_object.height)
+
+
+class WeatherEffectsProcessor(WorldProcessor):
+    def __init__(self):
+        super(WeatherEffectsProcessor, self).__init__()
+
+    def process(self, world_object: World) -> None:
+        if len(world_object.rains) > 0:
+            for rain in world_object.rains:
+                for coordinate in rain.all_coordinates:
+                    worms_in_cell = world_object.worms_at(coordinate)
+                    food_in_cell = world_object.food_at(coordinate)
+                    rain.raining_effect(worms_in_cell, food_in_cell)
+
+
 class AnalyticsProcessor(WorldProcessor):
     def __init__(self):
         super(AnalyticsProcessor, self).__init__()
@@ -363,7 +408,9 @@ class AnalyticsProcessor(WorldProcessor):
 if __name__ == "__main__":
     world = World(100, 100, 250, 1000)
 
-    processors = [AgingProcessor(), ZeroEnergyProcessor(), PoisonProcessor(), MovementProcessor(), FightProcessor(),
+    processors = [AgingProcessor(), ZeroEnergyProcessor(), PoisonProcessor(),
+                  WeatherEventsEmergenceProcessor(), WeatherMovementsProcessor(), WeatherEffectsProcessor(),
+                  MovementProcessor(), FightProcessor(),
                   CorpseGrindingProcessor(), DeadWormsRemover(),
                   FoodPickUpProcessor(), EatenFoodRemover(), AddFoodProcessor(),
                   LevelUpProcessor(), WormDivision(), MutationProcessor(),
