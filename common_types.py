@@ -9,6 +9,7 @@ class Colors(Enum):
     BLUE = (255, 0, 0)
     GREEN = (0, 255, 0)
     YELLOW = (0, 255, 255)
+    SKY_BLUE = (235, 206, 135)
 
 
 Cell = namedtuple('Cell', ['x', 'y'])
@@ -21,4 +22,4 @@ class Neighbors(Enum):
     LEFT = Cell(-1, 0)
 
 
-
+Neighbors_values = [Neighbors.UP.value, Neighbors.DOWN.value, Neighbors.LEFT.value, Neighbors.RIGHT.value]
