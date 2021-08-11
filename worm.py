@@ -67,12 +67,12 @@ class Genetics:
         self.insertion_mutation(inserted_gene)
 
 
-class Role:
+class Character:
     def __init__(self, coordinates: tuple):
         self.coordinates = coordinates
 
 
-class Food(Role):
+class Food(Character):
     def __init__(self, coordinates: tuple):
         super().__init__(coordinates)
         self.nutritional_value: int = random.randint(1, 5)
@@ -82,7 +82,7 @@ class Food(Role):
         return self.nutritional_value <= 0
 
 
-class Worm(Role):
+class Worm(Character):
     def __init__(self, coordinates: tuple):
         super().__init__(coordinates)
         self._name: str = random.choice(worms_names)
@@ -111,6 +111,12 @@ class Worm(Role):
 
     def get_damage(self) -> int:
         return self._damage
+
+    def set_damage(self, x) -> None:
+        assert x is int or float, 'setting damage is not number'
+        self._damage = x
+
+    damage = property(get_damage, set_damage)
 
     def get_defense(self) -> float:
         return self._defense
@@ -399,3 +405,10 @@ class Worm(Role):
             new_x = min(max(new_coordinates[0], 0), border_x - 1)
             new_y = min(max(new_coordinates[1], 0), border_y - 1)
             self.coordinates = Cell(new_x, new_y)
+
+
+if __name__ == "__main__":
+    worm = Worm((10, 10))
+    print(worm.health)
+    worm.health -= 2
+    print(worm.health)
