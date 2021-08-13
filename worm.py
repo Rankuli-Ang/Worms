@@ -81,6 +81,13 @@ class Food(Character):
     def eaten(self) -> bool:
         return self.nutritional_value <= 0
 
+    def relocation(self, step: tuple, border_x: int, border_y: int) -> None:
+        new_coordinates = tuple(map(add, step, self.coordinates))
+        new_x = min(max(new_coordinates[0], 0), border_x - 1)
+        new_y = min(max(new_coordinates[1], 0), border_y - 1)
+        self.coordinates = Cell(new_x, new_y)
+
+
 
 class Worm(Character):
     def __init__(self, coordinates: tuple):
@@ -351,6 +358,11 @@ class Worm(Character):
     def poison(self, target) -> None:
         target.poisoned += random.randint(1, 3)
 
+    def poison_effect(self) -> None:
+        if self.get_poisoned() > 0:
+            self._health -= 1
+            self.poisoned -= 1
+
     def is_relative_to(self, other) -> bool:
         return abs(self.genetics.family_affinity - other.genetics.family_affinity) < 1e-12
 
@@ -406,9 +418,3 @@ class Worm(Character):
             new_y = min(max(new_coordinates[1], 0), border_y - 1)
             self.coordinates = Cell(new_x, new_y)
 
-
-if __name__ == "__main__":
-    worm = Worm((10, 10))
-    print(worm.health)
-    worm.health -= 2
-    print(worm.health)
