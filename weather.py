@@ -1,5 +1,5 @@
 import random
-from common_types import Cell, Neighbors_values
+from common_types import Cell, neighbors_values, tornado_scatter_values
 from operator import add
 from worm import Worm, Food
 
@@ -7,20 +7,9 @@ from worm import Worm, Food
 class Weather_Event:
     def __init__(self, start_coordinates: tuple):
         self._zero_coordinates = start_coordinates
-
-
-class Rain(Weather_Event):
-    def __init__(self, start_coordinates: tuple):
-        super().__init__(start_coordinates)
-        self._side: int = random.randrange(2, 5)
-        self._duration: int = random.randrange(3, 10)
+        self._side: int = 0
+        self._duration: int = 0
         self._all_coordinates: list = []
-
-    def describe(self):
-        print('start coordinates:', self._zero_coordinates)
-        print('side:', self._side)
-        print('duration:', self._duration)
-        print('all', self._all_coordinates)
 
     def upscaling(self, border_x: int, border_y: int) -> None:
         coordinates = []
@@ -47,8 +36,13 @@ class Rain(Weather_Event):
                         line_coordinates.append(next_coordinates)
             coordinates.extend(line_coordinates)
             line_begin_coordinates_raw = tuple(map(add, step_down, line_begin_coordinates))
-            line_begin_coordinates = Cell(line_begin_coordinates_raw[0], line_begin_coordinates_raw[1])
+            line_begin_coordinates = Cell(line_begin_coordinates_raw[0],
+                                          min(max(line_begin_coordinates_raw[1], 0), border_y - 1))
         self._all_coordinates = coordinates
+
+    @property
+    def duration(self):
+        return self._duration
 
     @property
     def coordinates(self):
@@ -58,7 +52,7 @@ class Rain(Weather_Event):
         self._duration -= 1
 
     @property
-    def is_over(self) -> int:
+    def is_over(self) -> bool:
         return self._duration <= 0
 
     @property
@@ -67,11 +61,20 @@ class Rain(Weather_Event):
 
     def move(self, border_x: int, border_y: int) -> None:
         if not self.is_over:
-            step = random.choice(Neighbors_values)
+            self.decrease_duration()
+            step = random.choice(neighbors_values)
             new_coordinates = tuple(map(add, step, self._zero_coordinates))
             new_x = min(max(new_coordinates[0], 0), border_x - 1)
             new_y = min(max(new_coordinates[1], 0), border_y - 1)
             self._zero_coordinates = Cell(new_x, new_y)
+
+
+class Rain(Weather_Event):
+    def __init__(self, start_coordinates: tuple):
+        super().__init__(start_coordinates)
+        self._side: int = random.randrange(3, 8)
+        self._duration: int = random.randrange(20, 50)
+        self._all_coordinates: list = []
 
     def raining_effect(self, affected_worms: list[Worm], affected_food: list[Food]) -> None:
         if len(affected_worms) > 0:
@@ -84,11 +87,46 @@ class Rain(Weather_Event):
                 item.nutritional_value -= 0.5
 
 
-if __name__ == "__main__":
-    width = 100
-    height = 100
-    rain = Rain(Cell(random.randrange(0, width), random.randrange(0, height)))
-    rain.describe()
-    rain.move(width, height)
-    rain.upscaling(width, height)
-    rain.describe()
+class Tornado(Weather_Event):
+    def __init__(self, start_coordinates: tuple):
+        super().__init__(start_coordinates)
+        self._side: int = random.randrange(3, 8)
+        self._duration: int = random.randrange(60, 100)
+        self._all_coordinates: list = []
+        self._charge: int = 20
+        self._direction = random.choice(neighbors_values)
+
+    def tornado_effect(self, affected_worms: list[Worm], affected_food: list[Food], border_x: int, border_y: int):
+        if len(affected_worms) > 0:
+            for worm in affected_worms:
+                throw = random.choice(tornado_scatter_values)
+                worm.move(throw, border_x, border_y)
+
+        if len(affected_food) > 0:
+            for food in affected_food:
+                throw = random.choice(tornado_scatter_values)
+                food.relocation(throw, border_x, border_y)
+
+    def move(self, border_x: int, border_y: int) -> None:
+        if not self.is_over:
+            self.decrease_duration()
+            if self._charge <= 0:
+                self._direction = random.choice(neighbors_values)
+                self._charge = 10
+            self._charge -= 1
+            new_coordinates = tuple(map(add, self._direction, self._zero_coordinates))
+            new_x = min(max(new_coordinates[0], 0), border_x - 1)
+            if new_x == 0 or new_x == border_x - 1:
+                new_direction = random.choice(neighbors_values)
+                while new_direction == self._direction:
+                    new_direction = random.choice(neighbors_values)
+                self._direction = new_direction
+
+            new_y = min(max(new_coordinates[1], 0), border_y - 1)
+            if new_y == 0 or new_y == border_y - 1:
+                new_direction = random.choice(neighbors_values)
+                while new_direction == self._direction:
+                    new_direction = random.choice(neighbors_values)
+                self._direction = new_direction
+            self._zero_coordinates = Cell(new_x, new_y)
+
