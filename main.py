@@ -2,7 +2,7 @@ import random
 from typing import List
 from operator import add
 from common_types import Colors, Cell, Neighbors
-from weather import Rain
+from weather import Rain, Tornado
 
 import cv2
 import numpy as np
@@ -15,6 +15,7 @@ class World:
         self.worms: List[Worm] = []
         self.food: List[Food] = []
         self.rains: List[Rain] = []
+        self.tornadoes: list[Tornado] = []
         self.name: str = 'World'
         self.height = height
         self.width = width
@@ -35,11 +36,10 @@ class World:
             self.food.append(food_unit)
 
     def rain_emergence(self) -> None:
-        if len(self.rains) < 3:
-            chance_throw = random.randrange(0, 10)
-            if chance_throw >= 8:
-                rain = Rain(Cell(random.randrange(0, self.width), random.randrange(0, self.height)))
-                self.rains.append(rain)
+        self.rains.append(Rain(Cell(random.randrange(0, self.width), random.randrange(0, self.height))))
+
+    def tornado_emergence(self) -> None:
+        self.tornadoes.append(Tornado(Cell(random.randrange(0, self.width), random.randrange(0, self.height))))
 
     @property
     def worms_by_initiative(self) -> List[Worm]:
@@ -158,6 +158,10 @@ class Visualizer(WorldProcessor):
             for coordinate in rain.all_coordinates:
                 vis[coordinate.__getattribute__('y'), coordinate.__getattribute__('x')] \
                     = Colors.SKY_BLUE.value
+        for tornado in world_object.tornadoes:
+            for coordinate in tornado.all_coordinates:
+                vis[coordinate.__getattribute__('y'), coordinate.__getattribute__('x')] \
+                    = Colors.GREY.value
         for worm in world_object.worms:
             if worm.get_generation() < 4:
                 vis[worm.coordinates.__getattribute__('y'), worm.coordinates.__getattribute__('x')] \
@@ -240,9 +244,7 @@ class PoisonProcessor(WorldProcessor):
 
     def process(self, world_object: World) -> None:
         for worm in world_object.worms_by_initiative:
-            if worm.get_poisoned() > 0:
-                worm.health -= 1
-                worm.poisoned -= 1
+            worm.poison_effect()
 
 
 class FightProcessor(WorldProcessor):
@@ -367,7 +369,15 @@ class WeatherEventsEmergenceProcessor(WorldProcessor):
         super(WeatherEventsEmergenceProcessor, self).__init__()
 
     def process(self, world_object: World) -> None:
-        world_object.rain_emergence()
+        if len(world_object.rains) < 5:
+            chance_throw = random.randrange(0, 10)
+            if chance_throw >= 8:
+                world_object.rain_emergence()
+
+        if len(world_object.tornadoes) < 3:
+            chance_throw = random.randrange(0, 10)
+            if chance_throw >= 8:
+                world_object.tornado_emergence()
 
 
 class WeatherMovementsProcessor(WorldProcessor):
@@ -379,6 +389,11 @@ class WeatherMovementsProcessor(WorldProcessor):
             for rain in world_object.rains:
                 rain.move(world_object.width, world_object.height)
                 rain.upscaling(world_object.width, world_object.height)
+
+        if len(world_object.tornadoes) > 0:
+            for tornado in world_object.tornadoes:
+                tornado.move(world_object.width, world_object.height)
+                tornado.upscaling(world_object.width, world_object.height)
 
 
 class WeatherEffectsProcessor(WorldProcessor):
@@ -393,6 +408,27 @@ class WeatherEffectsProcessor(WorldProcessor):
                     food_in_cell = world_object.food_at(coordinate)
                     rain.raining_effect(worms_in_cell, food_in_cell)
 
+        if len(world_object.tornadoes) > 0:
+            for tornado in world_object.tornadoes:
+                for coordinate in tornado.all_coordinates:
+                    worms_in_cell = world_object.worms_at(coordinate)
+                    food_in_cell = world_object.food_at(coordinate)
+                    tornado.tornado_effect(worms_in_cell, food_in_cell, world_object.width, world_object.height)
+
+
+class WeatherEventsRemover(WorldProcessor):
+    def __init__(self):
+        super(WeatherEventsRemover, self).__init__()
+
+    def process(self, world_object: World) -> None:
+        for rain in world_object.rains:
+            if rain.duration <= 0:
+                world_object.rains.remove(rain)
+
+        for tornado in world_object.tornadoes:
+            if tornado.duration <= 0:
+                world_object.tornadoes.remove(tornado)
+
 
 class AnalyticsProcessor(WorldProcessor):
     def __init__(self):
@@ -406,16 +442,17 @@ class AnalyticsProcessor(WorldProcessor):
 
 
 if __name__ == "__main__":
-    world = World(100, 100, 250, 1000)
+    world = World(100, 100, 100, 1000)
 
     processors = [AgingProcessor(), ZeroEnergyProcessor(), PoisonProcessor(),
-                  WeatherEventsEmergenceProcessor(), WeatherMovementsProcessor(), WeatherEffectsProcessor(),
-                  MovementProcessor(), FightProcessor(),
-                  CorpseGrindingProcessor(), DeadWormsRemover(),
-                  FoodPickUpProcessor(), EatenFoodRemover(), AddFoodProcessor(),
+                  WeatherEventsEmergenceProcessor(), AddFoodProcessor(),
+                  WeatherMovementsProcessor(), WeatherEffectsProcessor(),
+                  MovementProcessor(), FightProcessor(), CorpseGrindingProcessor(), FoodPickUpProcessor(),
+                  DeadWormsRemover(), EatenFoodRemover(), WeatherEventsRemover(),
                   LevelUpProcessor(), WormDivision(), MutationProcessor(),
                   AnalyticsProcessor(), Visualizer()]
 
     while True:
         for proc in processors:
             proc.process(world)
+
