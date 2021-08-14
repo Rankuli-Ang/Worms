@@ -32,7 +32,7 @@ def read_names(filename):
     return worms_names
 
 
-worms_names = read_names("Names.txt")
+worms_names = read_names("names.txt")
 
 
 class Genetics:

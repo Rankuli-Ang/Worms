@@ -1,94 +1,108 @@
 import random
-from typing import List
-from operator import add
-from common_types import Colors, Cell, Neighbors
+from typing import List, Dict
+from common_types import Colors, Cell, Neighbors, NEIGHBOURS_VALUES
 from weather import Rain, Tornado
 
 import cv2
 import numpy as np
+import time
 
 from worm import Worm, Food, create_genome
 
 
+# rename to just Cell
+class WorldCell:
+    def __init__(self):
+        self.worms = []
+        self.food = []
+
+
 class World:
     def __init__(self, height: int = 100, width: int = 100, worms_num: int = 250, food_num: int = 1000):
+        self.cells: Dict[Cell, WorldCell] = {}
         self.worms: List[Worm] = []
         self.food: List[Food] = []
+
+        for y in range(height):
+            for x in range(width):
+                self.cells[Cell(x, y)] = WorldCell()
+
         self.rains: List[Rain] = []
-        self.tornadoes: list[Tornado] = []
+        self.tornadoes: List[Tornado] = []
         self.name: str = 'World'
         self.height = height
         self.width = width
 
-        World.populate_world(self, worms_num)
-        World.sow_food(self, food_num)
+        # World. - очень странно, так никто не пишет
+        self.populate_world(worms_num)
+        self.sow_food(food_num)
+
+    def get_random_pos(self) -> Cell:
+        return Cell(random.randrange(0, self.width), random.randrange(0, self.height))
 
     def populate_world(self, worms_num: int = 250) -> None:
         for i in range(worms_num):
-            worm = Worm(Cell(random.randrange(0, self.width), random.randrange(0, self.height)))
+            pos = self.get_random_pos()
+            worm = Worm(pos)
             worm.genetics.genotype = create_genome()
             worm.newborn_genetics_boost(worm.genetics.genotype)
+            self.cells[pos].worms.append(worm)
             self.worms.append(worm)
 
     def sow_food(self, food_num: int = 1000) -> None:
         for i in range(food_num):
-            food_unit = Food(Cell(random.randrange(0, self.width), random.randrange(0, self.height)))
+            pos = self.get_random_pos()
+            food_unit = Food(pos)
+            self.cells[pos].food.append(food_unit)
             self.food.append(food_unit)
 
     def rain_emergence(self) -> None:
-        self.rains.append(Rain(Cell(random.randrange(0, self.width), random.randrange(0, self.height))))
+        self.rains.append(Rain(self.get_random_pos()))
 
     def tornado_emergence(self) -> None:
-        self.tornadoes.append(Tornado(Cell(random.randrange(0, self.width), random.randrange(0, self.height))))
+        self.tornadoes.append(Tornado(self.get_random_pos()))
 
     @property
     def worms_by_initiative(self) -> List[Worm]:
         return sorted(world.worms, key=lambda worm: worm.get_initiative())
 
     def worms_at(self, location_cell: tuple) -> List[Worm]:
-        return [worm for worm in self.worms if
-                worm.coordinates == location_cell]
+        # if location_cell in self.cells:
+        return self.cells[location_cell].worms
+        # return []
 
     def food_at(self, location_cell: tuple) -> List[Food]:
-        return [food_unit for food_unit in self.food
-                if food_unit.coordinates == location_cell]
+        # if location_cell in self.cells:
+        return self.cells[location_cell].food
+        # return []
+
+    def has_food_at(self, location_cell: Cell) -> bool:
+        return location_cell in self.cells and len(self.cells[location_cell].food) > 0
+
+    @staticmethod
+    def move(pos, dir):
+        return Cell(pos[0] + dir[0], pos[1] + dir[1])
 
     def get_neighbours_worms(self, location_cell: tuple, border_x: int, border_y: int) -> dict:
         neighbours_worms = {}
 
-        if location_cell.__getattribute__('y') > 0:
-            up = {Neighbors.UP: world.worms_at(tuple(map(add, location_cell, Neighbors.UP.value)))}
-            neighbours_worms.update(up)
-        if location_cell.__getattribute__('y') < border_y:
-            down = {Neighbors.DOWN: world.worms_at(tuple(map(add, location_cell, Neighbors.DOWN.value)))}
-            neighbours_worms.update(down)
-        if location_cell.__getattribute__('x') > 0:
-            left = {Neighbors.LEFT: world.worms_at(tuple(map(add, location_cell, Neighbors.LEFT.value)))}
-            neighbours_worms.update(left)
-        if location_cell.__getattribute__('x') < border_x:
-            right = {Neighbors.RIGHT: world.worms_at(tuple(map(add, location_cell, Neighbors.RIGHT.value)))}
-            neighbours_worms.update(right)
+        x, y = location_cell[0], location_cell[1]
+
+        if y > 0:
+            neighbours_worms[Neighbors.UP] = world.worms_at(self.move(location_cell, Neighbors.UP.value))
+        if y < border_y - 1:
+            neighbours_worms[Neighbors.DOWN] = world.worms_at(self.move(location_cell, Neighbors.DOWN.value))
+        if x > 0:
+            neighbours_worms[Neighbors.LEFT] = world.worms_at(self.move(location_cell, Neighbors.LEFT.value))
+        if x < border_x - 1:
+            neighbours_worms[Neighbors.RIGHT] = world.worms_at(self.move(location_cell, Neighbors.RIGHT.value))
         return neighbours_worms
 
-    def get_neighbours_food(self, location_cell: tuple, border_x: int, border_y: int) -> list:
+    def get_neighbours_food(self, location_cell: tuple) -> list:
         neighbours_food = []
-
-        if location_cell.__getattribute__('y') > 0:
-            up = {Neighbors.UP: world.food_at(tuple(map(add, location_cell, Neighbors.UP.value)))}
-            if len(up.get(Neighbors.UP)) > 0:
-                neighbours_food.append(Neighbors.UP.value)
-        if location_cell.__getattribute__('y') < border_y:
-            down = {Neighbors.DOWN: world.food_at(tuple(map(add, location_cell, Neighbors.DOWN.value)))}
-            if len(down.get(Neighbors.DOWN)) > 0:
-                neighbours_food.append(Neighbors.DOWN.value)
-        if location_cell.__getattribute__('x') > 0:
-            left = {Neighbors.LEFT: world.food_at(tuple(map(add, location_cell, Neighbors.LEFT.value)))}
-            if len(left.get(Neighbors.LEFT)) > 0:
-                neighbours_food.append(Neighbors.LEFT.value)
-        if location_cell.__getattribute__('x') < border_x:
-            right = {Neighbors.RIGHT: world.food_at(tuple(map(add, location_cell, Neighbors.RIGHT.value)))}
-            if len(right.get(Neighbors.RIGHT)) > 0:
-                neighbours_food.append(Neighbors.RIGHT.value)
+        for val in NEIGHBOURS_VALUES:
+            if world.has_food_at(self.move(location_cell, val)):
+                neighbours_food.append(val)
         return neighbours_food
 
     def get_the_longest_genotype_at(self, location_cell: tuple) -> int:
@@ -187,7 +201,9 @@ class AddFoodProcessor(WorldProcessor):
     def process(self, world_object: World) -> None:
         growth = random.randint(10, 20)
         for i in range(growth):
-            food_unit = Food(Cell(random.randrange(0, world_object.width), random.randrange(0, world_object.height)))
+            pos = world_object.get_random_pos()
+            food_unit = Food(pos)
+            world_object.cells[pos].food.append(food_unit)
             world_object.food.append(food_unit)
 
 
@@ -232,10 +248,12 @@ class MovementProcessor(WorldProcessor):
                 if len(safe_steps) == 0:
                     continue
                 else:
-                    steps_with_food = world_object.get_neighbours_food(worm.coordinates, world_object.width,
-                                                                       world_object.height)
+                    steps_with_food = world_object.get_neighbours_food(worm.coordinates)
                     dcoord = random.choice(worm.get_best_steps(safe_steps, steps_with_food))
+
+                    world_object.cells[worm.coordinates].worms.remove(worm)
                     worm.move(dcoord, world_object.width, world_object.height)
+                    world_object.cells[worm.coordinates].worms.append(worm)
 
 
 class PoisonProcessor(WorldProcessor):
@@ -254,6 +272,8 @@ class FightProcessor(WorldProcessor):
     def process(self, world_object: World) -> None:
         for worm in world_object.worms_by_initiative:
             targets = world_object.worms_at(worm.coordinates)
+            if len(targets) == 0:
+                continue
             target = random.choice(targets)
 
             if target is worm:
@@ -292,7 +312,10 @@ class EatenFoodRemover(WorldProcessor):
         super(EatenFoodRemover, self).__init__()
 
     def process(self, world_object: World) -> None:
-        world_object.food = [food_unit for food_unit in world_object.food if not food_unit.eaten]
+        eaten_food = [food_unit for food_unit in world_object.food if food_unit.eaten]
+        for food in eaten_food:
+            world_object.cells[food.coordinates].food.remove(food)
+            world_object.food.remove(food)
 
 
 class CorpseGrindingProcessor(WorldProcessor):
@@ -319,8 +342,11 @@ class DeadWormsRemover(WorldProcessor):
 
     def process(self, world_object: World) -> None:
         number_of_worms_before = len(world_object.worms)
-        alive_worms = [worm for worm in world_object.worms if not worm.dead]
-        world_object.worms = alive_worms
+        dead_worms = [worm for worm in world_object.worms if worm.dead]
+        for worm in dead_worms:
+            cell = world_object.cells[worm.coordinates]
+            cell.worms.remove(worm)
+            world_object.worms.remove(worm)
         dead_worms_in_round = number_of_worms_before - len(world_object.worms)
         self.dead_worms += dead_worms_in_round
         print('dead', self.dead_worms)
@@ -336,9 +362,11 @@ class WormDivision(WorldProcessor):
                 continue
             child = Worm(parent.coordinates)
             child.genetics.genotype = world_object.genetic_variability(parent.coordinates)
+            world_object.cells[parent.coordinates].worms.append(child)
+            world_object.worms.append(child)
+            # assert len(child.genetics.genotype) > 0
             child.family_affinity = parent.genetics.family_affinity + 0.00000000000001
             child.newborn_genetics_boost(child.genetics.genotype)
-            world_object.worms.append(child)
             parent.divisions_limit -= 1
             child._generation = parent.get_generation() + 1
 
@@ -413,7 +441,14 @@ class WeatherEffectsProcessor(WorldProcessor):
                 for coordinate in tornado.all_coordinates:
                     worms_in_cell = world_object.worms_at(coordinate)
                     food_in_cell = world_object.food_at(coordinate)
+                    cell = world_object.cells[coordinate]
+                    cell.worms = []
+                    cell.food = []
                     tornado.tornado_effect(worms_in_cell, food_in_cell, world_object.width, world_object.height)
+                    for worm in worms_in_cell:
+                        world_object.cells[worm.coordinates].worms.append(worm)
+                    for food in food_in_cell:
+                        world_object.cells[food.coordinates].food.append(food)
 
 
 class WeatherEventsRemover(WorldProcessor):
@@ -452,7 +487,18 @@ if __name__ == "__main__":
                   LevelUpProcessor(), WormDivision(), MutationProcessor(),
                   AnalyticsProcessor(), Visualizer()]
 
+    # import yappi
+    #
+    # yappi.start(builtins=True)
+
+    tstart = time.time()
     while True:
+    # for i in range(200):
         for proc in processors:
             proc.process(world)
+    tend = time.time()
+    print(tend - tstart)
 
+    # yappi.stop()
+    # func_stats = yappi.get_func_stats()
+    # func_stats.save('callgrind.out', 'CALLGRIND')

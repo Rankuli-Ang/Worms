@@ -1,5 +1,7 @@
+from typing import List
+
 import random
-from common_types import Cell, neighbors_values, tornado_scatter_values
+from common_types import Cell, NEIGHBOURS_VALUES, tornado_scatter_values
 from operator import add
 from worm import Worm, Food
 
@@ -9,7 +11,7 @@ class Weather_Event:
         self._zero_coordinates = start_coordinates
         self._side: int = 0
         self._duration: int = 0
-        self._all_coordinates: list = []
+        self._all_coordinates: List = []
 
     def upscaling(self, border_x: int, border_y: int) -> None:
         coordinates = []
@@ -56,13 +58,13 @@ class Weather_Event:
         return self._duration <= 0
 
     @property
-    def all_coordinates(self) -> list:
+    def all_coordinates(self) -> List:
         return self._all_coordinates
 
     def move(self, border_x: int, border_y: int) -> None:
         if not self.is_over:
             self.decrease_duration()
-            step = random.choice(neighbors_values)
+            step = random.choice(NEIGHBOURS_VALUES)
             new_coordinates = tuple(map(add, step, self._zero_coordinates))
             new_x = min(max(new_coordinates[0], 0), border_x - 1)
             new_y = min(max(new_coordinates[1], 0), border_y - 1)
@@ -74,9 +76,9 @@ class Rain(Weather_Event):
         super().__init__(start_coordinates)
         self._side: int = random.randrange(3, 8)
         self._duration: int = random.randrange(20, 50)
-        self._all_coordinates: list = []
+        self._all_coordinates: List = []
 
-    def raining_effect(self, affected_worms: list[Worm], affected_food: list[Food]) -> None:
+    def raining_effect(self, affected_worms: List[Worm], affected_food: List[Food]) -> None:
         if len(affected_worms) > 0:
             for worm in affected_worms:
                 worm.health -= 0.2
@@ -92,11 +94,11 @@ class Tornado(Weather_Event):
         super().__init__(start_coordinates)
         self._side: int = random.randrange(3, 8)
         self._duration: int = random.randrange(60, 100)
-        self._all_coordinates: list = []
+        self._all_coordinates: List = []
         self._charge: int = 20
-        self._direction = random.choice(neighbors_values)
+        self._direction = random.choice(NEIGHBOURS_VALUES)
 
-    def tornado_effect(self, affected_worms: list[Worm], affected_food: list[Food], border_x: int, border_y: int):
+    def tornado_effect(self, affected_worms: List[Worm], affected_food: List[Food], border_x: int, border_y: int):
         if len(affected_worms) > 0:
             for worm in affected_worms:
                 throw = random.choice(tornado_scatter_values)
@@ -111,22 +113,22 @@ class Tornado(Weather_Event):
         if not self.is_over:
             self.decrease_duration()
             if self._charge <= 0:
-                self._direction = random.choice(neighbors_values)
+                self._direction = random.choice(NEIGHBOURS_VALUES)
                 self._charge = 10
             self._charge -= 1
             new_coordinates = tuple(map(add, self._direction, self._zero_coordinates))
             new_x = min(max(new_coordinates[0], 0), border_x - 1)
             if new_x == 0 or new_x == border_x - 1:
-                new_direction = random.choice(neighbors_values)
+                new_direction = random.choice(NEIGHBOURS_VALUES)
                 while new_direction == self._direction:
-                    new_direction = random.choice(neighbors_values)
+                    new_direction = random.choice(NEIGHBOURS_VALUES)
                 self._direction = new_direction
 
             new_y = min(max(new_coordinates[1], 0), border_y - 1)
             if new_y == 0 or new_y == border_y - 1:
-                new_direction = random.choice(neighbors_values)
+                new_direction = random.choice(NEIGHBOURS_VALUES)
                 while new_direction == self._direction:
-                    new_direction = random.choice(neighbors_values)
+                    new_direction = random.choice(NEIGHBOURS_VALUES)
                 self._direction = new_direction
             self._zero_coordinates = Cell(new_x, new_y)
 
