@@ -6,6 +6,7 @@ from common_types import Cell
 
 
 class Genes(Enum):
+    """stat bonus from genes"""
     ENERGY = 20
     HEALTH = 3
     DAMAGE = 2
@@ -16,6 +17,7 @@ genes_variations = [Genes.HEALTH, Genes.DAMAGE, Genes.ENERGY, Genes.DEFENSE]
 
 
 def create_genome():
+    """creates full genome, used for newborn worm"""
     genotype = []
     genes_for_add = 12
     while genes_for_add > 0:
@@ -25,17 +27,22 @@ def create_genome():
 
 
 def read_names(filename):
-    worms_names = []
-    with open(filename, 'r') as reader:
+    """creates pool of names from an external file"""
+    names = []
+    with open(filename, 'r', encoding=None) as reader:
         for line in reader:
-            worms_names.append(line.rstrip('\n'))
-    return worms_names
+            names.append(line.rstrip('\n'))
+    return names
 
 
 worms_names = read_names("names.txt")
 
 
 class Genetics:
+    """the class contains a genotype consisting of genes
+    that improve the characteristics of worm instances
+    and counters for these bonuses. """
+
     def __init__(self):
         self.genotype: list = []
         self.family_affinity: float = random.random()
@@ -48,14 +55,6 @@ class Genetics:
         self.damage_boost: int = 0
         self.defense_boost: int = 0
 
-    def create_genome(self):
-        genotype = []
-        genes_for_add = 12
-        while genes_for_add > 0:
-            genotype.append(random.choice(genes_variations))
-            genes_for_add -= 1
-        return genotype
-
     def insertion_mutation(self, inserted_gene: Genes) -> None:
         self.genotype.append(inserted_gene)
 
@@ -63,16 +62,21 @@ class Genetics:
         self.genotype.remove(deleted_gene)
 
     def substitution_mutation(self, deleted_gene: Genes, inserted_gene: Genes) -> None:
+        """replaces one random gene with another random one """
         self.deletion_mutation(deleted_gene)
         self.insertion_mutation(inserted_gene)
 
 
 class Character:
+    """skeleton class for objects on the map """
+
     def __init__(self, coordinates: tuple):
         self.coordinates = coordinates
 
 
 class Food(Character):
+    """healing objects located on the map """
+
     def __init__(self, coordinates: tuple):
         super().__init__(coordinates)
         self.nutritional_value: int = random.randint(1, 5)
@@ -88,8 +92,8 @@ class Food(Character):
         self.coordinates = Cell(new_x, new_y)
 
 
-
 class Worm(Character):
+    """ main active objects of simulation"""
     def __init__(self, coordinates: tuple):
         super().__init__(coordinates)
         self._name: str = random.choice(worms_names)
@@ -110,18 +114,18 @@ class Worm(Character):
     def get_health(self) -> int:
         return self._health
 
-    def set_health(self, x) -> None:
-        assert x is int or float, 'setting health is not number'
-        self._health = x
+    def set_health(self, new_value_of_health) -> None:
+        assert new_value_of_health is int or float, 'setting health is not number'
+        self._health = new_value_of_health
 
     health = property(get_health, set_health)
 
     def get_damage(self) -> int:
         return self._damage
 
-    def set_damage(self, x) -> None:
-        assert x is int or float, 'setting damage is not number'
-        self._damage = x
+    def set_damage(self, new_value_of_damage) -> None:
+        assert new_value_of_damage is int or float, 'setting damage is not number'
+        self._damage = new_value_of_damage
 
     damage = property(get_damage, set_damage)
 
@@ -134,9 +138,9 @@ class Worm(Character):
     def get_energy(self) -> int:
         return self._energy
 
-    def set_energy(self, x) -> None:
-        assert x is int or float, 'setting energy is not number'
-        self._energy = x
+    def set_energy(self, new_value_of_energy) -> None:
+        assert new_value_of_energy is int or float, 'setting energy is not number'
+        self._energy = new_value_of_energy
 
     energy = property(get_energy, set_energy)
 
@@ -146,9 +150,9 @@ class Worm(Character):
     def get_poisoned(self) -> int:
         return self._poisoned
 
-    def set_poisoned(self, x) -> None:
-        assert x is int or float, 'setting poisoned is not number'
-        self._poisoned = x
+    def set_poisoned(self, new_value_of_poisoned) -> None:
+        assert new_value_of_poisoned is int or float, 'setting poisoned is not number'
+        self._poisoned = new_value_of_poisoned
 
     poisoned = property(get_poisoned, set_poisoned)
 
@@ -158,22 +162,23 @@ class Worm(Character):
     def get_divisions_limit(self) -> int:
         return self._divisions_limit
 
-    def set_divisions_limit(self, x) -> None:
-        assert x is int or float, 'setting divisions limit is not number'
-        self._divisions_limit = x
+    def set_divisions_limit(self, new_value_of_divisions_limit) -> None:
+        assert new_value_of_divisions_limit is int or float, 'setting divisions limit is not number'
+        self._divisions_limit = new_value_of_divisions_limit
 
     divisions_limit = property(get_divisions_limit, set_divisions_limit)
 
     def get_age(self) -> int:
         return self._age
 
-    def set_age(self, x) -> None:
-        assert x is int or float, 'setting age is not number'
-        self._age = x
+    def set_age(self, new_value_of_age) -> None:
+        assert new_value_of_age is int or float, 'setting age is not number'
+        self._age = new_value_of_age
 
     age = property(get_age, set_age)
 
     def describe(self) -> None:
+        """main stats of instance"""
         print(f'Worm {self._name}:')
         print(f'\thealth {self._health}')
         print(f'\tenergy {self._energy}')
@@ -187,6 +192,7 @@ class Worm(Character):
         print(f'\tdivisions_number {self._divisions_limit}')
 
     def energetic_genes_realization(self) -> None:
+        """every 3 gene give 1 stat bonus"""
         while self.genetics.energetic_genes_pool >= 3:
             self._energy += Genes.ENERGY.value
             self.genetics.energetic_genes_pool -= 3
@@ -197,6 +203,7 @@ class Worm(Character):
             self.genetics.energetic_boost -= 1
 
     def health_genes_realization(self) -> None:
+        """every 4 gene give 1 stat bonus"""
         while self.genetics.health_genes_pool >= 4:
             self._health += Genes.HEALTH.value
             self.genetics.health_genes_pool -= 4
@@ -207,6 +214,7 @@ class Worm(Character):
             self.genetics.health_boost -= 1
 
     def damage_genes_realization(self) -> None:
+        """every 5 gene give 1 stat bonus"""
         while self.genetics.damage_genes_pool >= 5:
             self._damage += Genes.DAMAGE.value
             self.genetics.damage_genes_pool -= 5
@@ -217,10 +225,10 @@ class Worm(Character):
             self.genetics.damage_boost -= 1
 
     def defense_genes_realization(self) -> None:
+        """every 5 gene give 1 stat bonus"""
         while self.genetics.defense_genes_pool >= 5:
-            self._defense -= Genes.DEFENSE.value
-            if self._defense < 0.2:
-                self._defense = 0.2
+            new_defense_value = self._defense - Genes.DEFENSE.value
+            self._defense = max(new_defense_value, 0.2)
             self.genetics.defense_genes_pool -= 5
             self.genetics.defense_boost += 1
         if self.genetics.defense_genes_pool < 0:
@@ -319,8 +327,7 @@ class Worm(Character):
         level_up_func = random.choice(level_ups)
         level_up_func()
 
-        if self._defense <= 0.2:
-            self._defense = 0.2
+        self._defense = max(self._defense, 0.2)
 
         self.division_potential()
 
@@ -355,6 +362,7 @@ class Worm(Character):
         else:
             return 1
 
+    @staticmethod
     def poison(self, target) -> None:
         target.poisoned += random.randint(1, 3)
 
@@ -369,6 +377,7 @@ class Worm(Character):
     def is_dangerous(self, other_value: int) -> bool:
         return other_value > self._health
 
+    @staticmethod
     def max_danger_at_location(self, worms_here: list):
         if len(worms_here) > 0:
             return max([worm.get_health() for worm in worms_here])
@@ -378,10 +387,11 @@ class Worm(Character):
     def get_safe_steps(self, steps: dict) -> list:
         safe_steps = []
         for step in steps:
-            if not self.is_dangerous(self.max_danger_at_location(steps.get(step))):
+            if not self.is_dangerous(self.max_danger_at_location(self, steps.get(step))):
                 safe_steps.append(step.value)
         return safe_steps
 
+    @staticmethod
     def get_best_steps(self, safe_steps: list, steps_with_food: list) -> list:
         best_steps = []
         for step in steps_with_food:
@@ -399,7 +409,7 @@ class Worm(Character):
             self._energy -= 2 * self.aging_factor()
             saving_throw = random.randint(1, 10)
             if saving_throw <= 3:
-                self.poison(other)
+                self.poison(self, other)
 
     def eat(self, target_food) -> None:
         if not self.dead:
@@ -417,4 +427,3 @@ class Worm(Character):
             new_x = min(max(new_coordinates[0], 0), border_x - 1)
             new_y = min(max(new_coordinates[1], 0), border_y - 1)
             self.coordinates = Cell(new_x, new_y)
-
