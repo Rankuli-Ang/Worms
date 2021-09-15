@@ -32,7 +32,7 @@ def read_names(filename):
     return worms_names
 
 
-worms_names = read_names("Names.txt")
+worms_names = read_names("names.txt")
 
 
 class Genetics:
@@ -67,12 +67,12 @@ class Genetics:
         self.insertion_mutation(inserted_gene)
 
 
-class Role:
+class Character:
     def __init__(self, coordinates: tuple):
         self.coordinates = coordinates
 
 
-class Food(Role):
+class Food(Character):
     def __init__(self, coordinates: tuple):
         super().__init__(coordinates)
         self.nutritional_value: int = random.randint(1, 5)
@@ -81,8 +81,15 @@ class Food(Role):
     def eaten(self) -> bool:
         return self.nutritional_value <= 0
 
+    def relocation(self, step: tuple, border_x: int, border_y: int) -> None:
+        new_coordinates = tuple(map(add, step, self.coordinates))
+        new_x = min(max(new_coordinates[0], 0), border_x - 1)
+        new_y = min(max(new_coordinates[1], 0), border_y - 1)
+        self.coordinates = Cell(new_x, new_y)
 
-class Worm(Role):
+
+
+class Worm(Character):
     def __init__(self, coordinates: tuple):
         super().__init__(coordinates)
         self._name: str = random.choice(worms_names)
@@ -111,6 +118,12 @@ class Worm(Role):
 
     def get_damage(self) -> int:
         return self._damage
+
+    def set_damage(self, x) -> None:
+        assert x is int or float, 'setting damage is not number'
+        self._damage = x
+
+    damage = property(get_damage, set_damage)
 
     def get_defense(self) -> float:
         return self._defense
@@ -345,6 +358,11 @@ class Worm(Role):
     def poison(self, target) -> None:
         target.poisoned += random.randint(1, 3)
 
+    def poison_effect(self) -> None:
+        if self.get_poisoned() > 0:
+            self._health -= 1
+            self.poisoned -= 1
+
     def is_relative_to(self, other) -> bool:
         return abs(self.genetics.family_affinity - other.genetics.family_affinity) < 1e-12
 
@@ -399,3 +417,4 @@ class Worm(Role):
             new_x = min(max(new_coordinates[0], 0), border_x - 1)
             new_y = min(max(new_coordinates[1], 0), border_y - 1)
             self.coordinates = Cell(new_x, new_y)
+
