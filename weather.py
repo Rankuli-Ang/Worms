@@ -7,7 +7,7 @@ from worm import Worm, Food
 
 
 class WeatherEvent:
-    """skeleton class for weather objects on the map"""
+    """Skeleton class for weather objects on the map."""
     def __init__(self, start_coordinates: tuple):
         self._zero_coordinates = start_coordinates
         self._side: int = 0
@@ -15,15 +15,15 @@ class WeatherEvent:
         self._all_coordinates: List = []
 
     def upscaling(self, border_x: int, border_y: int) -> None:
-        """creates a list of coordinates according to the size of the weather object """
+        """Creates a list of coordinates according to the size of the weather object."""
         coordinates = []
         step_forward = (1, 0)
         step_down = (0, 1)
         line_begin_coordinates = self._zero_coordinates
-        for i in range(self._side):
+        for row_id in range(self._side):
             line_coordinates = []
-            for ii in range(self._side):
-                if ii == 0:
+            for column_id in range(self._side):
+                if column_id == 0:
                     last_coordinates = None
                 else:
                     last_coordinates = line_coordinates.pop()
@@ -64,6 +64,7 @@ class WeatherEvent:
         return self._all_coordinates
 
     def move(self, border_x: int, border_y: int) -> None:
+        """Moving method on the map."""
         if not self.is_over:
             self.decrease_duration()
             step = random.choice(NEIGHBOURS_VALUES)
@@ -74,7 +75,7 @@ class WeatherEvent:
 
 
 class Rain(WeatherEvent):
-    """an object on the map that occupies a certain area that reduces the health and damage of worms """
+    """An object on the map that occupies a certain area that reduces the health and damage of worms."""
     def __init__(self, start_coordinates: tuple):
         super().__init__(start_coordinates)
         self._side: int = random.randrange(3, 8)
@@ -82,8 +83,8 @@ class Rain(WeatherEvent):
         self._all_coordinates: List = []
 
     @staticmethod
-    def raining_effect(self, affected_worms: List[Worm], affected_food: List[Food]) -> None:
-        """the effect of reducing the characteristics of worms caught in the affected area """
+    def raining_effect(affected_worms: List[Worm], affected_food: List[Food]) -> None:
+        """The effect of reducing the characteristics of worms caught in the affected area."""
         if len(affected_worms) > 0:
             for worm in affected_worms:
                 worm.health -= 0.2
@@ -95,7 +96,7 @@ class Rain(WeatherEvent):
 
 
 class Tornado(WeatherEvent):
-    """an object on the map scattering other objects 5 cells to the sides """
+    """An object on the map scattering other objects on definite number of cells to the sides."""
     def __init__(self, start_coordinates: tuple):
         super().__init__(start_coordinates)
         self._side: int = random.randrange(3, 8)
@@ -105,9 +106,9 @@ class Tornado(WeatherEvent):
         self._direction = random.choice(NEIGHBOURS_VALUES)
 
     @staticmethod
-    def tornado_effect(self, affected_worms: List[Worm],
+    def tornado_effect(affected_worms: List[Worm],
                        affected_food: List[Food], border_x: int, border_y: int):
-        """scattering objects in the affected area """
+        """Scattering objects in the affected area."""
         if len(affected_worms) > 0:
             for worm in affected_worms:
                 throw = random.choice(tornado_scatter_values)
@@ -119,6 +120,7 @@ class Tornado(WeatherEvent):
                 food.relocation(throw, border_x, border_y)
 
     def move(self, border_x: int, border_y: int) -> None:
+        """Moving method on the map with limitation movements in one direction."""
         if not self.is_over:
             self.decrease_duration()
             if self._charge <= 0:
