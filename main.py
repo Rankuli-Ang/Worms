@@ -1,3 +1,4 @@
+import configparser
 import random
 from typing import List, Dict
 import cv2
@@ -253,12 +254,12 @@ class WormsMovementProcessor(WorldProcessor):
             targets = world_object.food_at(worm.coordinates)
             if len(enemies) == 0 and len(targets) > 0:
                 continue
-            elif not worm.is_dangerous\
+            elif not worm.is_dangerous \
                         (worm.max_danger_at_location(world_object.worms_at(worm.coordinates))) \
                     and len(targets) > 0:
                 continue
             else:
-                neighbours_worms = world_object.get_neighbours_worms\
+                neighbours_worms = world_object.get_neighbours_worms \
                     (worm.coordinates, world_object.width, world_object.height)
                 safe_steps = worm.get_safe_steps(neighbours_worms)
                 if len(safe_steps) == 0:
@@ -368,7 +369,7 @@ class DeadWormsRemover(WorldProcessor):
         print('dead', self.dead_worms)
 
 
-class WormDivision(WorldProcessor):
+class WormDivisionProcessor(WorldProcessor):
     def __init__(self):
         super().__init__()
 
@@ -493,17 +494,55 @@ class AnalyticsProcessor(WorldProcessor):
 
 
 if __name__ == "__main__":
-    world = World(100, 100, 100, 1000)
+    config = configparser.ConfigParser()
+    config.read('config.ini')
 
-    processors = [AgingProcessor(), ZeroEnergyProcessor(), PoisonProcessor(),
-                  WeatherEventsEmergenceProcessor(), AddFoodProcessor(),
-                  WeatherMovementsProcessor(), WeatherEffectsProcessor(),
-                  WormsMovementProcessor(), FightProcessor(),
-                  CorpseGrindingProcessor(), FoodPickUpProcessor(),
-                  DeadWormsRemover(), EatenFoodRemover(), WeatherEventsRemover(),
-                  LevelUpProcessor(), WormDivision(), MutationProcessor(),
-                  AnalyticsProcessor(), Visualizer()]
+    world_height = int(config.get('WORLD', 'height'))
+    world_width = int(config.get('WORLD', 'width'))
+    world_worms_num = int(config.get('WORLD', 'worms_num'))
+    world_food_num = int(config.get('WORLD', 'food_num'))
 
-    while True:
+    print(config.options('PROCESSORS'))
+
+    world = World(world_height, world_width, world_worms_num, world_food_num)
+    valid_processors = {
+        'agingprocessor': AgingProcessor,
+        'zeroenergyprocessor': ZeroEnergyProcessor,
+        'poisonprocessor': PoisonProcessor,
+        'weathereventsemergenceprocessor': WeatherEventsEmergenceProcessor,
+        'addfoodprocessor': AddFoodProcessor,
+        'weathermovementsprocessor': WeatherMovementsProcessor,
+        'weathereffectsprocessor': WeatherEffectsProcessor,
+        'wormsmovementprocessor': WormsMovementProcessor,
+        'fightprocessor': FightProcessor,
+        'corpsegrindingprocessor': CorpseGrindingProcessor,
+        'foodpickupprocessor': FoodPickUpProcessor,
+        'deadwormsremover': DeadWormsRemover,
+        'eatenfoodremover': EatenFoodRemover,
+        'weathereventsremover': WeatherEventsRemover,
+        'levelupprocessor': LevelUpProcessor,
+        'wormdivisionprocessor': WormDivisionProcessor,
+        'mutationprocessor': MutationProcessor,
+        'analyticsprocessor': AnalyticsProcessor,
+        'visualizer': Visualizer}
+
+    processors = []
+
+    for option in config.options('PROCESSORS'):
+        if option not in valid_processors.keys():
+            raise ValueError('Unknown processor')
+        else:
+            if config.getboolean('PROCESSORS', option) is True:
+                proc = valid_processors[option]
+                processors.append(proc())
+
+
+    t = 0
+    tt = True
+
+    while tt is True:
+        t += 1
         for proc in processors:
             proc.process(world)
+        if t >= 100:
+            tt = False
