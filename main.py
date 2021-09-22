@@ -24,7 +24,7 @@ class WorldCell:
 class World:
     def __init__(self, height: int = 100, width: int = 100,
                  worms_num: int = 250, food_num: int = 1000):
-        self.cells: Dict[Cell, WorldCell] = {}
+        self.cells: Dict[Cell or tuple, WorldCell] = {}
         self.worms: List[Worm] = []
         self.food: List[Food] = []
 
@@ -72,12 +72,12 @@ class World:
     def worms_by_initiative(self) -> List[Worm]:
         return sorted(world.worms, key=lambda worm: worm.get_initiative())
 
-    def worms_at(self, location_cell: tuple) -> List[Worm]:
+    def worms_at(self, location_cell: tuple or Cell) -> List[Worm]:
         # if location_cell in self.cells:
         return self.cells[location_cell].worms
         # return []
 
-    def food_at(self, location_cell: tuple) -> List[Food]:
+    def food_at(self, location_cell: tuple or Cell) -> List[Food]:
         # if location_cell in self.cells:
         return self.cells[location_cell].food
         # return []
@@ -124,7 +124,7 @@ class World:
         worms_at_location = self.worms_at(location_cell)
         if len(worms_at_location) == 1:
             return worms_at_location
-        families = []
+        families: List[float] = []
         worms_is_not_relatives = []
         for worm in worms_at_location:
             if len(families) == 0:
@@ -513,11 +513,7 @@ if __name__ == "__main__":
     fh.setLevel(logging.ERROR)
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     fh.setFormatter(formatter)
-
     logger.addHandler(fh)
-    logger.warning('warning')
-    logger.info('check')
-    logger.error('ERROR!!!')
 
     world_height = int(config.get('WORLD', 'height'))
     world_width = int(config.get('WORLD', 'width'))
@@ -556,7 +552,9 @@ if __name__ == "__main__":
             raise ValueError('Unknown processor')
         if config.getboolean('PROCESSORS', option) is True:
             proc = valid_processors[option]
-            processors.append(proc())
+            processors.append(proc)
+
+    print(processors)
 
     t = 0
     tt = True
@@ -564,7 +562,7 @@ if __name__ == "__main__":
     while tt is True:
         t += 1
         for proc in processors:
-            proc.process(world)
+            proc().process(world)
         if t >= 100:
             tt = False
     logging.info('program is ended correctly')
