@@ -68,7 +68,7 @@ class Genetics:
 
 
 class Character:
-    """Skeleton class for objects on the map."""
+    """Base class for objects on the map."""
 
     def __init__(self, coordinates: tuple):
         self.coordinates = coordinates
