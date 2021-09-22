@@ -21,7 +21,7 @@ class WeatherEvent:
         step_down = (0, 1)
         line_begin_coordinates = self._zero_coordinates
         for row_id in range(self._side):
-            line_coordinates = []
+            line_coordinates: List[tuple] = []
             for column_id in range(self._side):
                 if column_id == 0:
                     last_coordinates = None
