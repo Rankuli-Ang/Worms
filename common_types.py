@@ -1,3 +1,6 @@
+"""The module contains constants used in other modules,
+such as standard steps for moving worms,
+colors for displaying objects on the map, etc."""
 from enum import Enum
 from collections import namedtuple
 
@@ -40,18 +43,6 @@ tornado_scatter_values = [TornadoScatter.RIGHT.value, TornadoScatter.LEFT.value,
                           TornadoScatter.DOWN.value, TornadoScatter.UP.value]
 
 
-if __name__ == "__main__":
-    # I will delete it after cell corrections
-    import time
-    c1, c2 = Cell(10, 10), Cell(20, 20)
-    p1, p2 = (10, 10), (20, 20)
-    iters = 100000
-    t1 = time.time()
-    for i in range(iters):
-        c3 = Cell(c1[0] + c2[0], c1[1] + c2[1])
-    t2 = time.time()
-    for i in range(iters):
-        p3 = [p1[0] + p2[0], p1[1] + p2[1]]
-    t3 = time.time()
-    print(t2 - t1)
-    print(t3 - t2)
+# c1, c2 = Cell(10, 10), Cell(20, 20)
+# p1, p2 = (10, 10), (20, 20)
+# iters = 100000
