@@ -1,11 +1,8 @@
 import random
-"""The module is used to randomize 
-the initial characteristics of
- genetics, food, worms."""
 from enum import Enum
 from operator import add
-
 from common_types import Cell
+from typing import List
 
 
 class Genes(Enum):
@@ -84,7 +81,7 @@ class Food(Character):
 
     def __init__(self, coordinates: tuple):
         super().__init__(coordinates)
-        self.nutritional_value: int = random.randint(1, 5)
+        self.nutritional_value: float = random.randint(1, 5)
 
     @property
     def eaten(self) -> bool:
@@ -101,6 +98,7 @@ class Food(Character):
 
 class Worm(Character):
     """Main active objects of simulation."""
+
     def __init__(self, coordinates: tuple):
         super().__init__(coordinates)
         self._name: str = random.choice(worms_names)
@@ -318,22 +316,18 @@ class Worm(Character):
         deleted_gene = random.choice(self.genetics.genotype)
         if len(self.genetics.genotype) <= 1:
             self._health = 0
-            return
         else:
             self.genetics.deletion_mutation(deleted_gene)
             if deleted_gene == Genes.ENERGY:
                 self.genetics.energetic_genes_pool -= 1
                 self.energetic_genes_realization()
-                return
-            if deleted_gene == Genes.HEALTH:
+            elif deleted_gene == Genes.HEALTH:
                 self.genetics.health_genes_pool -= 1
                 self.health_genes_realization()
-                return
-            if deleted_gene == Genes.DAMAGE:
+            elif deleted_gene == Genes.DAMAGE:
                 self.genetics.damage_genes_pool -= 1
                 self.damage_genes_realization()
-                return
-            if deleted_gene == Genes.DEFENSE:
+            elif deleted_gene == Genes.DEFENSE:
                 self.genetics.defense_genes_pool -= 1
                 self.defense_genes_realization()
 
@@ -354,10 +348,8 @@ class Worm(Character):
          corresponding to the pool."""
         if mutation == 'substitution_mutation':
             self.substitution_mutation()
-            return
         elif mutation == 'insertion_mutation':
             self.insertion_mutation()
-            return
         elif mutation == 'deletion_mutation':
             self.deletion_mutation()
 
@@ -418,12 +410,12 @@ class Worm(Character):
     def aging_penalty(self) -> int:
         """Penalty for energy expenditure on movements and strikes,
         increasing with age."""
+        penalty_value = 1
         if self._age > 100:
-            return 3
+            penalty_value = 3
         elif self._age > 50:
-            return 2
-        else:
-            return 1
+            penalty_value = 2
+        return penalty_value
 
     @staticmethod
     def poison(target) -> None:
@@ -453,12 +445,12 @@ class Worm(Character):
         return enemy_health > self._health
 
     @staticmethod
-    def max_danger_at_location(worms_here: list) -> float:
+    def max_danger_at_location(worms_here: List) -> float:
         """Returns a value equal to the highest value of health in the list of worms. """
+        danger_health = 0
         if worms_here:
-            return max([worm.get_health() for worm in worms_here])
-        else:
-            return 0
+            danger_health = max([worm.get_health() for worm in worms_here])
+        return danger_health
 
     def get_safe_steps(self, steps: dict[Enum, list]) -> list:
         """Accepts a dictionary (key = location, value = list of worms in location).
@@ -479,10 +471,9 @@ class Worm(Character):
         for step in steps_with_food:
             if step in safe_steps:
                 best_steps.append(step)
-        if best_steps:
-            return best_steps
-        else:
-            return safe_steps
+        if len(best_steps) == 0:
+            best_steps = safe_steps
+        return best_steps
 
     def strike(self, other) -> None:
         """This worm strikes another worm, damaging it
