@@ -1,4 +1,7 @@
 import configparser
+from os import path
+import logging
+import logging.config
 import random
 from typing import List, Dict
 import cv2
@@ -494,8 +497,27 @@ class AnalyticsProcessor(WorldProcessor):
 
 
 if __name__ == "__main__":
+
     config = configparser.ConfigParser()
     config.read('config.ini')
+
+    log_file_path = path.join(path.dirname(path.abspath(__file__)), 'logging.conf.ini')
+    logging.config.fileConfig(log_file_path)
+
+    logging.config.fileConfig(log_file_path)
+
+    logging.basicConfig(filename='sum.log', level=logging.INFO)
+    logger = logging.getLogger('test_logger')
+
+    fh = logging.FileHandler('errors.log')
+    fh.setLevel(logging.ERROR)
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    fh.setFormatter(formatter)
+
+    logger.addHandler(fh)
+    logger.warning('warning')
+    logger.info('check')
+    logger.error('ERROR!!!')
 
     world_height = int(config.get('WORLD', 'height'))
     world_width = int(config.get('WORLD', 'width'))
@@ -530,12 +552,11 @@ if __name__ == "__main__":
 
     for option in config.options('PROCESSORS'):
         if option not in valid_processors.keys():
+            logging.error('Unknown processor')
             raise ValueError('Unknown processor')
-        else:
-            if config.getboolean('PROCESSORS', option) is True:
-                proc = valid_processors[option]
-                processors.append(proc())
-
+        if config.getboolean('PROCESSORS', option) is True:
+            proc = valid_processors[option]
+            processors.append(proc())
 
     t = 0
     tt = True
@@ -546,3 +567,4 @@ if __name__ == "__main__":
             proc.process(world)
         if t >= 100:
             tt = False
+    logging.info('program is ended correctly')

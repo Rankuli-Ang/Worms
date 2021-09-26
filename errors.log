@@ -1,0 +1,4 @@
+error
+2021-09-20 22:42:16,034 - test_logger - ERROR - ERROR!!!
+2021-09-20 22:43:45,541 - test_logger - ERROR - ERROR!!!
+2021-09-20 22:48:00,164 - test_logger - ERROR - ERROR!!!
