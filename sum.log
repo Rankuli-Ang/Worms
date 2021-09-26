@@ -1,4 +1,1 @@
-WARNING:test_logger:warning
-INFO:test_logger:check
-ERROR:test_logger:ERROR!!!
-INFO:root:program is ended correctly
+
