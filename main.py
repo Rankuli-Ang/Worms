@@ -4,7 +4,7 @@ import logging
 import logging.config
 import random
 from typing import List, Dict
-import cv2
+from cv2 import cv2
 import numpy as np
 
 from common_types import Colors, Cell, Neighbors, NEIGHBOURS_VALUES
