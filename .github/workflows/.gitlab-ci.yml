@@ -1,0 +1,12 @@
+pylint:
+  stage: test
+  script:
+    - pylint --rcfile=.pylintrc --output-format=text <LIST-OF-FILES-TO-RUN-PYLINT-AGAINST> | tee pylint.txt
+    - score=$(sed -n 's/^Your code has been rated at \([-0-9.]*\)\/.*/\1/p' pylint.txt)
+    - echo "Pylint score was $score"
+    - anybadge --value=$score --file=public/pylint.svg pylint
+    - echo "Pylint score was $score"
+    - anybadge --value=$score --file=public/pylint.svg pylint
+  artifacts:
+    paths:
+      - public/pylint.svg
