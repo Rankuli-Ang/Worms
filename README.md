@@ -1,5 +1,5 @@
 # Worms
-![pylint](https://NAMESPACE.gitlab.io/pyling.svg)
+[![pylint](https://<USER/GROUP_NAME>.gitlab.io/<PROJECT_PATH>/badges/pylint.svg)](https://<USER/GROUP_NAME>.gitlab.io/<PROJECT_PATH>/lint/)
 
 This repository includes the implementation of a simulation model of existence, development, generational change by units called worms. 
 Worms are objects located on the map and occupying one cell. They are able to move around the map, attack other worms, and eat food located on the map. 
