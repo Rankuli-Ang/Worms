@@ -1,4 +1,6 @@
 # Worms
+[![made-with-python](https://img.shields.io/badge/Made%20with-Python-1f425f.svg)](https://www.python.org/)
+
 ![Your Repository’s Stats](https://github-readme-stats.vercel.app/api?username=Worms&show_icons=true)
 
 This repository includes the implementation of a simulation model of existence, development, generational change by units called worms. 
