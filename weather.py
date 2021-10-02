@@ -1,13 +1,14 @@
+"""The module contains classes of weather events (rain, tornado)."""
 from typing import List
-
 import random
-from common_types import Cell, NEIGHBOURS_VALUES, tornado_scatter_values
 from operator import add
+
+from common_types import Cell, NEIGHBOURS_VALUES, tornado_scatter_values
 from worm import Worm, Food
 
 
 class WeatherEvent:
-    """Skeleton class for weather objects on the map."""
+    """Base class for weather objects on the map."""
     def __init__(self, start_coordinates: tuple):
         self._zero_coordinates = start_coordinates
         self._side: int = 0
@@ -21,7 +22,7 @@ class WeatherEvent:
         step_down = (0, 1)
         line_begin_coordinates = self._zero_coordinates
         for row_id in range(self._side):
-            line_coordinates = []
+            line_coordinates: List[tuple] = []
             for column_id in range(self._side):
                 if column_id == 0:
                     last_coordinates = None
@@ -33,9 +34,10 @@ class WeatherEvent:
                     line_coordinates.append(line_begin_coordinates)
                 else:
                     next_coordinates_raw = tuple(map(add, step_forward, last_coordinates))
-                    next_x = min(max(next_coordinates_raw[0], 0), border_x - 1)
-                    next_y = min(max(next_coordinates_raw[1], 0), border_y - 1)
-                    next_coordinates = Cell(next_x, next_y)
+                    next_coordinates = Cell(
+                        min(max(next_coordinates_raw[0], 0), border_x - 1),
+                        min(max(next_coordinates_raw[1], 0), border_y - 1)
+                    )
                     if next_coordinates not in line_coordinates:
                         line_coordinates.append(next_coordinates)
             coordinates.extend(line_coordinates)
@@ -46,21 +48,28 @@ class WeatherEvent:
 
     @property
     def duration(self):
+        """Return the remaining _duration."""
         return self._duration
 
     @property
     def coordinates(self):
+        """Returns the coordinate from which
+         the square of the coordinates
+         of the weather object on the map is built."""
         return self._zero_coordinates
 
     def decrease_duration(self) -> None:
+        """Decreasing _duration on 1."""
         self._duration -= 1
 
     @property
     def is_over(self) -> bool:
+        """True if the duration is over."""
         return self._duration <= 0
 
     @property
     def all_coordinates(self) -> List:
+        """Returns all coordinates at which the weather event is located."""
         return self._all_coordinates
 
     def move(self, border_x: int, border_y: int) -> None:
@@ -75,7 +84,9 @@ class WeatherEvent:
 
 
 class Rain(WeatherEvent):
-    """An object on the map that occupies a certain area that reduces the health and damage of worms."""
+    """An object on the map that occupies a certain area
+    that reduces the health and damage of worms,
+    reduce nutritive_value of food objects."""
     def __init__(self, start_coordinates: tuple):
         super().__init__(start_coordinates)
         self._side: int = random.randrange(3, 8)
@@ -84,7 +95,8 @@ class Rain(WeatherEvent):
 
     @staticmethod
     def raining_effect(affected_worms: List[Worm], affected_food: List[Food]) -> None:
-        """The effect of reducing the characteristics of worms caught in the affected area."""
+        """The effect of reducing the characteristics
+        of worms and food objects caught in the affected area."""
         if len(affected_worms) > 0:
             for worm in affected_worms:
                 worm.health -= 0.2
@@ -96,7 +108,8 @@ class Rain(WeatherEvent):
 
 
 class Tornado(WeatherEvent):
-    """An object on the map scattering other objects on definite number of cells to the sides."""
+    """An object on the map scattering worms and food objects
+    on definite number of cells to the sides."""
     def __init__(self, start_coordinates: tuple):
         super().__init__(start_coordinates)
         self._side: int = random.randrange(3, 8)
@@ -108,7 +121,7 @@ class Tornado(WeatherEvent):
     @staticmethod
     def tornado_effect(affected_worms: List[Worm],
                        affected_food: List[Food], border_x: int, border_y: int):
-        """Scattering objects in the affected area."""
+        """Scattering worms and food objects in the affected area."""
         if len(affected_worms) > 0:
             for worm in affected_worms:
                 throw = random.choice(tornado_scatter_values)
@@ -142,3 +155,8 @@ class Tornado(WeatherEvent):
                     new_direction = random.choice(NEIGHBOURS_VALUES)
                 self._direction = new_direction
             self._zero_coordinates = Cell(new_x, new_y)
+
+if __name__ == "__main__":
+    x = Rain((35, 35))
+    x.upscaling(100, 100)
+    print(x.all_coordinates)
