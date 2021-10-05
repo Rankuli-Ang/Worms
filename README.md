@@ -11,9 +11,9 @@ Also, with the direct contact of two worms and the creation of a descendant, the
 In realization of program used libraries: 
 - configparser
 - logging.config
+- unittest
 - cv2
 - numpy
-- os
 - random
 - typing
 - enum
