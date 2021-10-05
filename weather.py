@@ -3,12 +3,13 @@ from typing import List
 import random
 from operator import add
 
-from common_types import Cell, NEIGHBOURS_VALUES, tornado_scatter_values
+from common_types import NEIGHBOURS_VALUES, tornado_scatter_values
 from worm import Worm, Food
 
 
 class WeatherEvent:
     """Base class for weather objects on the map."""
+
     def __init__(self, start_coordinates: tuple):
         self._zero_coordinates = start_coordinates
         self._side: int = 0
@@ -34,7 +35,7 @@ class WeatherEvent:
                     line_coordinates.append(line_begin_coordinates)
                 else:
                     next_coordinates_raw = tuple(map(add, step_forward, last_coordinates))
-                    next_coordinates = Cell(
+                    next_coordinates = (
                         min(max(next_coordinates_raw[0], 0), border_x - 1),
                         min(max(next_coordinates_raw[1], 0), border_y - 1)
                     )
@@ -42,8 +43,8 @@ class WeatherEvent:
                         line_coordinates.append(next_coordinates)
             coordinates.extend(line_coordinates)
             line_begin_coordinates_raw = tuple(map(add, step_down, line_begin_coordinates))
-            line_begin_coordinates = Cell(line_begin_coordinates_raw[0],
-                                          min(max(line_begin_coordinates_raw[1], 0), border_y - 1))
+            line_begin_coordinates = (line_begin_coordinates_raw[0],
+                                      min(max(line_begin_coordinates_raw[1], 0), border_y - 1))
         self._all_coordinates = coordinates
 
     @property
@@ -80,13 +81,14 @@ class WeatherEvent:
             new_coordinates = tuple(map(add, step, self._zero_coordinates))
             new_x = min(max(new_coordinates[0], 0), border_x - 1)
             new_y = min(max(new_coordinates[1], 0), border_y - 1)
-            self._zero_coordinates = Cell(new_x, new_y)
+            self._zero_coordinates = (new_x, new_y)
 
 
 class Rain(WeatherEvent):
     """An object on the map that occupies a certain area
     that reduces the health and damage of worms,
     reduce nutritive_value of food objects."""
+
     def __init__(self, start_coordinates: tuple):
         super().__init__(start_coordinates)
         self._side: int = random.randrange(3, 8)
@@ -110,6 +112,7 @@ class Rain(WeatherEvent):
 class Tornado(WeatherEvent):
     """An object on the map scattering worms and food objects
     on definite number of cells to the sides."""
+
     def __init__(self, start_coordinates: tuple):
         super().__init__(start_coordinates)
         self._side: int = random.randrange(3, 8)
@@ -154,9 +157,4 @@ class Tornado(WeatherEvent):
                 while new_direction == self._direction:
                     new_direction = random.choice(NEIGHBOURS_VALUES)
                 self._direction = new_direction
-            self._zero_coordinates = Cell(new_x, new_y)
-
-if __name__ == "__main__":
-    x = Rain((35, 35))
-    x.upscaling(100, 100)
-    print(x.all_coordinates)
+            self._zero_coordinates = (new_x, new_y)

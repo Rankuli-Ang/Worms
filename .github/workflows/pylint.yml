@@ -17,9 +17,9 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install pylint
+        pip install opencv-python
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
     - name: Analysing the code with pylint
       run: |
-        pylint --exit-zero --output-format=pylint_gitlab.GitlabCodeClimateReporter . > codeclimate.json
-        pylint --exit-zero --output-format=pylint_gitlab.GitlabPagesHtmlReporter . > pylint.html
+        pylint --exit-zero `ls -R|grep .py$|xargs`
 

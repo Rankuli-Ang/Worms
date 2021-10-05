@@ -1,7 +1,8 @@
+"""The module contains the main characters
+(worms with genetics class and food)."""
 import random
 from enum import Enum
 from operator import add
-from common_types import Cell
 from typing import List
 
 
@@ -93,7 +94,7 @@ class Food(Character):
         new_coordinates = tuple(map(add, step, self.coordinates))
         new_x = min(max(new_coordinates[0], 0), border_x - 1)
         new_y = min(max(new_coordinates[1], 0), border_y - 1)
-        self.coordinates = Cell(new_x, new_y)
+        self.coordinates = (new_x, new_y)
 
 
 class Worm(Character):
@@ -197,20 +198,6 @@ class Worm(Character):
         self._age = new_age
 
     age = property(get_age, set_age)
-
-    def describe(self) -> None:
-        """Displays the main characteristics of worm instance."""
-        print(f'Worm {self._name}:')
-        print(f'\thealth {self._health}')
-        print(f'\tenergy {self._energy}')
-        print(f'\tdamage {self._damage}')
-        print(f'\tdefense {self._defense}')
-        print(f'\tinitiative {self._initiative}')
-        print(f'\tlevel {self._level}')
-        print(f'\texperience {self._experience}')
-        print(f'\tpoisoned {self._poisoned}')
-        print(f'\tgeneration {self._generation}')
-        print(f'\tdivisions_number {self._divisions_limit}')
 
     def energetic_genes_realization(self) -> None:
         """Every 3 ENERGY gene in the genes pool
@@ -340,17 +327,17 @@ class Worm(Character):
         self.deletion_mutation()
         self.insertion_mutation()
 
-    def mutation_metamorphosis(self, mutation: str) -> None:
+    def mutation_metamorphosis(self, mutation_probability_throw: int) -> None:
         """Removes a gene from the genotype of the worm
          and / or adds a gene to the genotype.
          Makes the appropriate changes to the pool of genes to be changed,
          implements the bonus / penalty of the worm characteristics
          corresponding to the pool."""
-        if mutation == 'substitution_mutation':
+        if mutation_probability_throw == 1:
             self.substitution_mutation()
-        elif mutation == 'insertion_mutation':
+        elif 1 < mutation_probability_throw < 4:
             self.insertion_mutation()
-        elif mutation == 'deletion_mutation':
+        elif 3 < mutation_probability_throw < 6:
             self.deletion_mutation()
 
     def level_up(self) -> None:
@@ -484,8 +471,8 @@ class Worm(Character):
             other.health -= self._damage * other.get_defense()
             self._experience += 1
             self._energy -= 2 * self.aging_penalty()
-            saving_throw = random.randint(1, 10)
-            if saving_throw <= 3:
+            poison_probability_throw = random.randint(1, 10)
+            if poison_probability_throw <= 3:
                 self.poison(other)
 
     def eat(self, target_food) -> None:
@@ -510,4 +497,4 @@ class Worm(Character):
             new_coordinates = tuple(map(add, step, self.coordinates))
             new_x = min(max(new_coordinates[0], 0), border_x - 1)
             new_y = min(max(new_coordinates[1], 0), border_y - 1)
-            self.coordinates = Cell(new_x, new_y)
+            self.coordinates = (new_x, new_y)
