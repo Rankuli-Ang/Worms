@@ -17,7 +17,7 @@ class Genes(Enum):
 genes_variations = [Genes.HEALTH, Genes.DAMAGE, Genes.ENERGY, Genes.DEFENSE]
 
 
-def create_genome():
+def create_genome() -> List:
     """Creates full genome, used for newborn worm."""
     genotype = []
     genes_for_add = 12
@@ -27,7 +27,7 @@ def create_genome():
     return genotype
 
 
-def read_names(filename):
+def read_names(filename) -> List:
     """Creates pool of names from an external file."""
     names = []
     with open(filename, 'r', encoding=None) as reader:
@@ -62,7 +62,8 @@ class Genetics:
 
     def deletion_mutation(self, deleted_gene: Genes) -> None:
         """Deleting gene from the genotype of instance."""
-        self.genotype.remove(deleted_gene)
+        if len(self.genotype) >= 0:
+            self.genotype.remove(deleted_gene)
 
     def substitution_mutation(self, deleted_gene: Genes, inserted_gene: Genes) -> None:
         """Replaces one random gene with another random one."""
@@ -300,10 +301,16 @@ class Worm(Character):
         if the pool becomes less than zero,
         then decreases the characteristic of the worm instance
          by the value of the gene."""
+        if len(self.genetics.genotype) == 0:
+            self._health = 0
+            return
+
         deleted_gene = random.choice(self.genetics.genotype)
-        if len(self.genetics.genotype) <= 1:
+        if len(self.genetics.genotype) == 1:
+            self.genetics.deletion_mutation(deleted_gene)
             self._health = 0
         else:
+            deleted_gene = random.choice(self.genetics.genotype)
             self.genetics.deletion_mutation(deleted_gene)
             if deleted_gene == Genes.ENERGY:
                 self.genetics.energetic_genes_pool -= 1

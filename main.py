@@ -272,9 +272,10 @@ class WormsMovementProcessor(WorldProcessor):
             enemies = [enemy for enemy in world_object.worms_at(worm.coordinates)
                        if enemy is not worm]
             affordable_food = world_object.food_at(worm.coordinates)
-            if worm.is_dangerous(
-                    worm.max_danger_at_location(world_object.worms_at(worm.coordinates))
-            ) or (len(affordable_food) == 0 and len(enemies) == 0):
+            worm_in_danger = worm.is_dangerous(
+                worm.max_danger_at_location(world_object.worms_at(worm.coordinates)))
+
+            if worm_in_danger or (len(affordable_food) == 0 and len(enemies) == 0):
                 neighbours_worms = world_object.get_neighbours_worms(
                     worm.coordinates, world_object.width, world_object.height)
                 safe_steps = worm.get_safe_steps(neighbours_worms)

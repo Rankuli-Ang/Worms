@@ -108,6 +108,14 @@ class Rain(WeatherEvent):
             for item in affected_food:
                 item.nutritional_value -= 0.5
 
+    def get_side(self) -> int:
+        """Returns side of a square of the weather object."""
+        return self._side
+
+    def set_side(self, new_value: int) -> None:
+        """Returns new value of the side of a square of the weather object."""
+        self._side = new_value
+
 
 class Tornado(WeatherEvent):
     """An object on the map scattering worms and food objects
