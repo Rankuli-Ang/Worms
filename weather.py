@@ -73,6 +73,16 @@ class WeatherEvent:
         """Returns all coordinates at which the weather event is located."""
         return self._all_coordinates
 
+    def get_side(self) -> int:
+        """Returns side of a square of the weather object."""
+        return self._side
+
+    def set_side(self, new_value: int) -> None:
+        """Returns new value of the side of a square of the weather object."""
+        self._side = new_value
+
+    side = property(get_side, set_side)
+
     def move(self, border_x: int, border_y: int) -> None:
         """Moving method on the map."""
         if not self.is_over:
@@ -107,14 +117,6 @@ class Rain(WeatherEvent):
         if len(affected_food) > 0:
             for item in affected_food:
                 item.nutritional_value -= 0.5
-
-    def get_side(self) -> int:
-        """Returns side of a square of the weather object."""
-        return self._side
-
-    def set_side(self, new_value: int) -> None:
-        """Returns new value of the side of a square of the weather object."""
-        self._side = new_value
 
 
 class Tornado(WeatherEvent):
