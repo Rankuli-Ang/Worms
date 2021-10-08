@@ -7,7 +7,7 @@ class WormTest(unittest.TestCase):
     """General test class."""
 
     def test_strike(self) -> None:
-        """Tests health change after strike."""
+        """Checks health change after strike."""
         self.first = worm.Worm((1, 1))
         self.second = worm.Worm((1, 1))
 
@@ -17,7 +17,7 @@ class WormTest(unittest.TestCase):
         self.assertEqual(self.second.health, control_health)
 
     def test_move(self) -> None:
-        """Tests not going out of borders of the field."""
+        """Checks not going out of borders of the field."""
         self.first = worm.Worm((1, 1))
         self.border_x = 3
         self.border_y = 3
@@ -25,7 +25,7 @@ class WormTest(unittest.TestCase):
         self.assertEqual(self.first.coordinates, (2, 2))
 
     def test_safe_steps(self) -> None:
-        """Tests the correctness of the danger assessment of steps."""
+        """Checks the correctness of the danger assessment of steps."""
         self.control_worm = worm.Worm((10, 10))
         self.control_worm.health = 3
         self.danger_worm = worm.Worm((9, 10))
@@ -41,7 +41,7 @@ class WormTest(unittest.TestCase):
         self.assertIn((-1, 0), result)
 
     def test_deletion_mutation(self) -> None:
-        """Tests the correctness of the deleting genes from genotype."""
+        """Checks the correctness of the deleting genes from genotype."""
         self.control_worm = worm.Worm((0, 0))
         test_genotype = worm.create_genome()
         self.control_worm.genetics.genotype = test_genotype
