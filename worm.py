@@ -17,7 +17,7 @@ class Genes(Enum):
 genes_variations = [Genes.HEALTH, Genes.DAMAGE, Genes.ENERGY, Genes.DEFENSE]
 
 
-def create_genome() -> List:
+def create_genome() -> List[Genes]:
     """Creates full genome, used for newborn worm."""
     genotype = []
     genes_for_add = 12
@@ -27,7 +27,7 @@ def create_genome() -> List:
     return genotype
 
 
-def read_names(filename) -> List:
+def read_names(filename) -> List[str]:
     """Creates pool of names from an external file."""
     names = []
     with open(filename, 'r', encoding=None) as reader:
@@ -62,7 +62,7 @@ class Genetics:
 
     def deletion_mutation(self, deleted_gene: Genes) -> None:
         """Deleting gene from the genotype of instance."""
-        if len(self.genotype) >= 0:
+        if len(self.genotype) > 0:
             self.genotype.remove(deleted_gene)
 
     def substitution_mutation(self, deleted_gene: Genes, inserted_gene: Genes) -> None:
@@ -117,6 +117,13 @@ class Worm(Character):
         self._age: float = 0
 
         self.genetics = Genetics()
+
+    def visualize_characteristics(self) -> None:
+        print(self._name)
+        print(self.health)
+        print(self.coordinates)
+        print(self.energy)
+        print(len(self.genetics.genotype))
 
     def get_health(self) -> float:
         """Get _health value of worm instance."""
@@ -305,9 +312,8 @@ class Worm(Character):
             self._health = 0
             return
 
-        deleted_gene = random.choice(self.genetics.genotype)
         if len(self.genetics.genotype) == 1:
-            self.genetics.deletion_mutation(deleted_gene)
+            self.genetics.genotype = []
             self._health = 0
         else:
             deleted_gene = random.choice(self.genetics.genotype)
