@@ -1,6 +1,6 @@
 import unittest
-from . import weather
-from . import worm
+from active_characters import weather
+from active_characters import worm
 
 
 class TestWeather(unittest.TestCase):
