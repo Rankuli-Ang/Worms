@@ -9,8 +9,8 @@ import cv2
 import numpy as np
 
 from common_types import Colors, Neighbors, NEIGHBOURS_VALUES
-from weather import Rain, Tornado
-from worm import Worm, Food, create_genome, Genes
+from active_characters.weather import Rain, Tornado
+from active_characters.worm import Worm, Food, create_genome, Genes
 
 
 class Cell:
