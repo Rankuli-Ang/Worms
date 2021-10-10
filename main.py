@@ -8,7 +8,7 @@ from typing import List, Dict
 import cv2
 import numpy as np
 
-from common_types import Colors, Neighbors, NEIGHBOURS_VALUES
+from constants_values.common_types import Colors, Neighbors, NEIGHBOURS_VALUES
 from active_characters.weather import Rain, Tornado
 from active_characters.worm import Worm, Food, create_genome, Genes
 
