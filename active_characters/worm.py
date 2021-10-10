@@ -36,7 +36,7 @@ def read_names(filename) -> List[str]:
     return names
 
 
-worms_names = read_names("names.txt")
+worms_names = read_names("constants_values\\names.txt")
 
 
 class Genetics:
@@ -117,13 +117,6 @@ class Worm(Character):
         self._age: float = 0
 
         self.genetics = Genetics()
-
-    def visualize_characteristics(self) -> None:
-        print(self._name)
-        print(self.health)
-        print(self.coordinates)
-        print(self.energy)
-        print(len(self.genetics.genotype))
 
     def get_health(self) -> float:
         """Get _health value of worm instance."""
