@@ -1,6 +1,6 @@
 import unittest
 from active_characters import worm
-from common_types import Neighbors
+from constants_values.common_types import Neighbors
 
 
 class WormTest(unittest.TestCase):
