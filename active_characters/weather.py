@@ -4,7 +4,7 @@ import random
 from operator import add
 
 from active_characters.worm import Worm, Food
-from common_types import NEIGHBOURS_VALUES, tornado_scatter_values
+from constants_values.common_types import NEIGHBOURS_VALUES, tornado_scatter_values
 
 
 class WeatherEvent:
