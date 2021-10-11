@@ -1,5 +1,7 @@
 # Worms
 [![made-with-python](https://img.shields.io/badge/Made%20with-Python-1f425f.svg)](https://www.python.org/)
+[![Pylint](https://github.com/Rankuli-Ang/Worms/actions/workflows/pylint.yml/badge.svg)](https://github.com/Rankuli-Ang/Worms/actions/workflows/pylint.yml)
+[![Pytest](https://github.com/Rankuli-Ang/Worms/actions/workflows/python-app.yml/badge.svg)](https://github.com/Rankuli-Ang/Worms/actions/workflows/python-app.yml)
 
 
 This repository includes the implementation of a simulation model of existence, development, generational change by units called worms. 
