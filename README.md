@@ -11,13 +11,13 @@ Also, with the direct contact of two worms and the creation of a descendant, the
 
 ![Alt text](images/worms.gif?raw=True "Worms")
 
-In realization of program used libraries: 
-- configparser
-- logging.config
-- unittest
+the visualization of the GIF shows an example of the simulation. White, blue, green, yellow elements are worms of different generations. Reds are food. light blue elements are rains that have a stat-degrading effect on worms and food. The gray ones are tornadoes, scattering worms and food around them.
+
+Build: copy all repository files, run worms.py
+
+In realization of program used third party libraries: 
 - cv2
 - numpy
-- random
-- typing
-- enum
-- operator
+- configparser
+- logging
+- unittest
