@@ -192,6 +192,11 @@ class WorldProcessor:
 class Visualizer(WorldProcessor):
     """Visualizing processor."""
 
+    def __init__(self, save_visualizations: bool = False):
+        super(Visualizer, self).__init__()
+        self.save_visualizations = save_visualizations
+        self.count = 0
+
     def process(self, world_object: World) -> None:
         """Visualize the map of world with objects
         from Worm and Weather modules."""
@@ -223,6 +228,10 @@ class Visualizer(WorldProcessor):
 
         scale = 4
         vis = cv2.resize(vis, None, fx=scale, fy=scale, interpolation=cv2.INTER_NEAREST)
+
+        if self.save_visualizations:
+            cv2.imwrite(f'output/vis_{self.count}.png', vis)
+            self.count += 1
 
         cv2.imshow('vis', vis)
         cv2.waitKey(1)
