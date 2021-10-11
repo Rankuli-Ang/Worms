@@ -3,7 +3,9 @@
 import random
 from enum import Enum
 from operator import add
-from typing import List
+from typing import List, Dict
+
+from constants_values.names import NAMES
 
 
 class Genes(Enum):
@@ -25,18 +27,6 @@ def create_genome() -> List[Genes]:
         genotype.append(random.choice(genes_variations))
         genes_for_add -= 1
     return genotype
-
-
-def read_names(filename) -> List[str]:
-    """Creates pool of names from an external file."""
-    names = []
-    with open(filename, 'r', encoding=None) as reader:
-        for line in reader:
-            names.append(line.rstrip('\n'))
-    return names
-
-
-worms_names = read_names("constants_values\\names.txt")
 
 
 class Genetics:
@@ -103,7 +93,7 @@ class Worm(Character):
 
     def __init__(self, coordinates: tuple):
         super().__init__(coordinates)
-        self._name: str = random.choice(worms_names)
+        self._name: str = random.choice(NAMES)
         self._health: float = random.randint(6, 9)
         self._damage: float = random.randint(1, 3)
         self._defense: float = random.uniform(0.8, 0.95)
@@ -445,7 +435,7 @@ class Worm(Character):
             danger_health = max([worm.get_health() for worm in worms_here])
         return danger_health
 
-    def get_safe_steps(self, steps: dict[Enum, list]) -> list:
+    def get_safe_steps(self, steps: Dict[Enum, List]) -> List:
         """Accepts a dictionary (key = location, value = list of worms in location).
         Returns a list of locations in which the highest health value of the worm
         from the list of worms is less than the health of the current worm. """
