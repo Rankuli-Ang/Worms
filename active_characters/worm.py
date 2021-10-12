@@ -3,7 +3,9 @@
 import random
 from enum import Enum
 from operator import add
-from typing import List
+from typing import List, Dict
+
+from constants_values.names import NAMES
 
 
 class Genes(Enum):
@@ -17,7 +19,7 @@ class Genes(Enum):
 genes_variations = [Genes.HEALTH, Genes.DAMAGE, Genes.ENERGY, Genes.DEFENSE]
 
 
-def create_genome() -> List:
+def create_genome() -> List[Genes]:
     """Creates full genome, used for newborn worm."""
     genotype = []
     genes_for_add = 12
@@ -25,18 +27,6 @@ def create_genome() -> List:
         genotype.append(random.choice(genes_variations))
         genes_for_add -= 1
     return genotype
-
-
-def read_names(filename) -> List:
-    """Creates pool of names from an external file."""
-    names = []
-    with open(filename, 'r', encoding=None) as reader:
-        for line in reader:
-            names.append(line.rstrip('\n'))
-    return names
-
-
-worms_names = read_names("names.txt")
 
 
 class Genetics:
@@ -62,7 +52,7 @@ class Genetics:
 
     def deletion_mutation(self, deleted_gene: Genes) -> None:
         """Deleting gene from the genotype of instance."""
-        if len(self.genotype) >= 0:
+        if len(self.genotype) > 0:
             self.genotype.remove(deleted_gene)
 
     def substitution_mutation(self, deleted_gene: Genes, inserted_gene: Genes) -> None:
@@ -103,7 +93,7 @@ class Worm(Character):
 
     def __init__(self, coordinates: tuple):
         super().__init__(coordinates)
-        self._name: str = random.choice(worms_names)
+        self._name: str = random.choice(NAMES)
         self._health: float = random.randint(6, 9)
         self._damage: float = random.randint(1, 3)
         self._defense: float = random.uniform(0.8, 0.95)
@@ -305,9 +295,8 @@ class Worm(Character):
             self._health = 0
             return
 
-        deleted_gene = random.choice(self.genetics.genotype)
         if len(self.genetics.genotype) == 1:
-            self.genetics.deletion_mutation(deleted_gene)
+            self.genetics.genotype = []
             self._health = 0
         else:
             deleted_gene = random.choice(self.genetics.genotype)
@@ -446,7 +435,7 @@ class Worm(Character):
             danger_health = max([worm.get_health() for worm in worms_here])
         return danger_health
 
-    def get_safe_steps(self, steps: dict[Enum, list]) -> list:
+    def get_safe_steps(self, steps: Dict[Enum, List]) -> List:
         """Accepts a dictionary (key = location, value = list of worms in location).
         Returns a list of locations in which the highest health value of the worm
         from the list of worms is less than the health of the current worm. """

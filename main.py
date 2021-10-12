@@ -8,9 +8,9 @@ from typing import List, Dict
 import cv2
 import numpy as np
 
-from common_types import Colors, Neighbors, NEIGHBOURS_VALUES
-from weather import Rain, Tornado
-from worm import Worm, Food, create_genome
+from constants_values.common_types import Colors, Neighbors, NEIGHBOURS_VALUES
+from active_characters.weather import Rain, Tornado
+from active_characters.worm import Worm, Food, create_genome, Genes
 
 
 class Cell:
@@ -119,7 +119,7 @@ class World:
                 world.worms_at(self.move(location_cell, Neighbors.RIGHT.value))
         return neighbours_worms
 
-    def get_neighbours_food(self, location_cell: tuple) -> list:
+    def get_neighbours_food(self, location_cell: tuple) -> List[Neighbors]:
         """Returns list of neighbours cells with food."""
         neighbours_food = []
         for val in NEIGHBOURS_VALUES:
@@ -134,7 +134,7 @@ class World:
         lengths = [len(creature.genetics.genotype) for creature in genotype_owners]
         return max(lengths, default=0)
 
-    def worms_is_not_relatives(self, location_cell: tuple) -> list:
+    def worms_is_not_relatives(self, location_cell: tuple) -> List[Worm]:
         """Returns a list of non-related worms with unique genotypes."""
         worms_at_location = self.worms_at(location_cell)
         if len(worms_at_location) == 1:
@@ -156,7 +156,7 @@ class World:
                 worms_is_not_relatives.append(worm)
         return worms_is_not_relatives
 
-    def genetic_variability(self, location_cell: tuple) -> list:
+    def genetic_variability(self, location_cell: tuple) -> List[Genes]:
         """Shuffles parental genotypes into a new one."""
         parents = self.worms_is_not_relatives(location_cell)
         if len(parents) == 1 and len(parents[0].genetics.genotype) > 0:
@@ -192,6 +192,11 @@ class WorldProcessor:
 class Visualizer(WorldProcessor):
     """Visualizing processor."""
 
+    def __init__(self, save_visualizations: bool = False):
+        super(Visualizer, self).__init__()
+        self.save_visualizations = save_visualizations
+        self.count = 0
+
     def process(self, world_object: World) -> None:
         """Visualize the map of world with objects
         from Worm and Weather modules."""
@@ -223,6 +228,10 @@ class Visualizer(WorldProcessor):
 
         scale = 4
         vis = cv2.resize(vis, None, fx=scale, fy=scale, interpolation=cv2.INTER_NEAREST)
+
+        if self.save_visualizations:
+            cv2.imwrite(f'output/vis_{self.count}.png', vis)
+            self.count += 1
 
         cv2.imshow('vis', vis)
         cv2.waitKey(1)
@@ -272,10 +281,15 @@ class WormsMovementProcessor(WorldProcessor):
             enemies = [enemy for enemy in world_object.worms_at(worm.coordinates)
                        if enemy is not worm]
             affordable_food = world_object.food_at(worm.coordinates)
-            worm_in_danger = worm.is_dangerous(
+            is_worm_in_danger = worm.is_dangerous(
                 worm.max_danger_at_location(world_object.worms_at(worm.coordinates)))
 
-            if worm_in_danger or (len(affordable_food) == 0 and len(enemies) == 0):
+            is_nothing_interesting_in_cell = False
+
+            if len(affordable_food) == 0 and len(enemies) == 0:
+                is_nothing_interesting_in_cell = True
+
+            if is_worm_in_danger or is_nothing_interesting_in_cell:
                 neighbours_worms = world_object.get_neighbours_worms(
                     worm.coordinates, world_object.width, world_object.height)
                 safe_steps = worm.get_safe_steps(neighbours_worms)
