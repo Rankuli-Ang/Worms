@@ -1,5 +1,5 @@
 import unittest
-from Worms.src.active_characters import Worm
+from Worms.src import active_characters
 from Worms.resources.common_types import Neighbors
 
 
