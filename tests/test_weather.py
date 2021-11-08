@@ -1,6 +1,6 @@
 import unittest
-from Worms.src import weather
-from Worms.src import active_characters
+from src import weather
+from src import active_characters
 
 
 class TestWeather(unittest.TestCase):
