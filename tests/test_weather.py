@@ -22,11 +22,11 @@ class TestWeather(unittest.TestCase):
         border_y = 5
 
         foods = []
-        food_object = worm.Food((3, 3))
+        food_object = active_characters.Food((3, 3))
         foods.append(food_object)
 
         worms = []
-        worm_object = worm.Worm((3, 3))
+        worm_object = active_characters.Worm((3, 3))
         worms.append(worm_object)
 
         result_coordinates_variations = [(0, 3), (3, 0), (4, 3), (3, 4)]
